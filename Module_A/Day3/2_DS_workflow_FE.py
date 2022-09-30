@@ -33,12 +33,19 @@
 # MAGIC 
 # MAGIC ## CRISP-DM
 # MAGIC 
-# MAGIC ![CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
+# MAGIC 
+# MAGIC [CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
+# MAGIC 
+# MAGIC <br>
+# MAGIC <img src="https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png" width="768" height="512" />
 # MAGIC 
 # MAGIC ## CRISP-ML
 # MAGIC 
-# MAGIC ![CRISP-ML Process](https://ml-ops.org/img/crisp-ml-process.jpg)  
-# MAGIC [Source](https://ml-ops.org/content/crisp-ml)  
+# MAGIC [CRISP-ML Process](https://ml-ops.org/img/crisp-ml-process.jpg)  
+# MAGIC [Source](https://ml-ops.org/content/crisp-ml)
+# MAGIC 
+# MAGIC <br>
+# MAGIC <img src="https://ml-ops.org/img/crisp-ml-process.jpg" width="1024" height="512" />
 
 # COMMAND ----------
 

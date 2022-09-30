@@ -43,7 +43,8 @@
 # MAGIC %md
 # MAGIC ## CRISP-DM
 # MAGIC 
-# MAGIC The CRoss Industry Standard Process for Data Mining ([CRISP-DM](https://www.datascience-pm.com/crisp-dm-2/)) is a process model that serves as the base for a data science process.  
+# MAGIC The CRoss Industry Standard Process for Data Mining ([CRISP-DM](https://www.datascience-pm.com/crisp-dm-2/)) is a process model that serves as the base for a data science process. 
+# MAGIC 
 # MAGIC It has six sequential phases:
 # MAGIC 
 # MAGIC + Business understanding – What does the business need?
@@ -54,7 +55,10 @@
 # MAGIC + Deployment – How do stakeholders access the results?
 # MAGIC 
 # MAGIC 
-# MAGIC ![CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
+# MAGIC [CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
+# MAGIC 
+# MAGIC <br>
+# MAGIC <img src="https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png" width="768" height="512" />
 
 # COMMAND ----------
 
@@ -69,16 +73,22 @@
 # MAGIC %md
 # MAGIC ## CRISP-ML
 # MAGIC 
-# MAGIC ![CRISP-ML Process](https://ml-ops.org/img/crisp-ml-process.jpg)  
+# MAGIC [CRISP-ML Process](https://ml-ops.org/img/crisp-ml-process.jpg)  
 # MAGIC [Source](https://ml-ops.org/content/crisp-ml)
+# MAGIC 
+# MAGIC <br>
+# MAGIC <img src="https://ml-ops.org/img/crisp-ml-process.jpg" width="1024" height="512" />
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC If we explode the EDA phase in each of the previous frameworks, we would have something like this:
 # MAGIC 
-# MAGIC ![EDA](https://www.researchgate.net/publication/329930775/figure/fig3/AS:873046667710469@1585161954284/The-fundamental-steps-of-the-exploratory-data-analysis-process_W640.jpg)  
+# MAGIC [EDA](https://www.researchgate.net/publication/329930775/figure/fig3/AS:873046667710469@1585161954284/The-fundamental-steps-of-the-exploratory-data-analysis-process_W640.jpg)  
 # MAGIC [Source](https://www.researchgate.net/publication/329930775_A_comprehensive_review_of_tools_for_exploratory_analysis_of_tabular_industrial_datasets)
+# MAGIC 
+# MAGIC <br>
+# MAGIC <img src="https://www.researchgate.net/publication/329930775/figure/fig3/AS:873046667710469@1585161954284/The-fundamental-steps-of-the-exploratory-data-analysis-process_W640.jpg" width="1024" height="512" />
 
 # COMMAND ----------
 

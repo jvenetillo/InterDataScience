@@ -98,6 +98,9 @@ spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
 spark.sql(f"USE dsacademy_embedded_wave3_{username}")
 spark.conf.set("spark.sql.shuffle.partitions", 8)
 
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
 # COMMAND ----------
 
 # MAGIC %md 
