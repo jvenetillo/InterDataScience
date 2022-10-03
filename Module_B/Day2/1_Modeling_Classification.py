@@ -5,55 +5,14 @@
 # MAGIC ## Predictive Analysis - numerical and categorical data
 # MAGIC 
 # MAGIC ### The sinking of Titanic  
-# MAGIC Based on [this](https://www.kaggle.com/c/titanic-gettingStarted) Kaggle Competition. Inspired by a handful of solutions, like [this one](https://towardsdatascience.com/predicting-the-survival-of-titanic-passengers-30870ccc7e8)
-
-# COMMAND ----------
-
-#!pip install -U -q forestci rgf_python scikit-learn joblib tpot imbalanced-learn tensorflow tensorboard xgboost lightgbm torch torchvision delayed
-
-# COMMAND ----------
-
-import os
-import sys
-import time
-import pickle
-import itertools
-import pandas as pd
-import numpy as np
-import pylab
-import warnings
-
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.font_manager import FontProperties
-import seaborn as sns
-
-from IPython.display import display, Image
-from IPython.core.interactiveshell import InteractiveShell
-
-%matplotlib inline
-#%matplotlib notebook
-#matplotlib.rcdefaults()
-#matplotlib.verbose.set_level('silent')
-
-# COMMAND ----------
-
-## Optional -- testing GPU support to tensorflow
-import tensorflow as tf
-print(tf.__version__)
-
-from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+# MAGIC Based on [this](https://www.kaggle.com/c/titanic-gettingStarted) Kaggle Competition.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## The Mighty Titanic !
 # MAGIC 
-# MAGIC ![Titanic](../Images/titanic.jpeg)
+# MAGIC ![Titanic](https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/RMS_Titanic_3.jpg/1280px-RMS_Titanic_3.jpg)
 
 # COMMAND ----------
 
@@ -108,22 +67,75 @@ print(device_lib.list_local_devices())
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Importing the datasets
+# MAGIC # 1 - (Installing and) Loading Basic Packages
 
 # COMMAND ----------
 
-datapath = "../Data/Kaggle/Titanic"
-outputs = "../Data/Kaggle/Titanic"
+#!pip install -U -q  scikit-learn 
+#!pip install -U -q  imbalanced-learn 
+#!pip install -U -q  xgboost 
+#!pip install -U -q  lightgbm 
+#!pip install -U -q  rgf_python 
+#!pip install -U -q  forestci
+#!pip install -U -q  tpot 
+#!pip install -U -q  tensorflow tensorboard 
+#!pip install -U -q  torch torchvision 
+#!pip install -U -q  delayed
+#!pip install -U -q  joblib 
 
 # COMMAND ----------
 
-df_train = pd.read_csv(os.path.join(datapath,'kaggle_titanic_train.csv'))
-df_test = pd.read_csv(os.path.join(datapath,'kaggle_titanic_test.csv'))
+import os
+import sys
+import time
+import pickle
+import itertools
+import warnings
+import string
+import re
+
+import numpy as np
+import pylab
+import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+from IPython.display import display, Image
+from IPython.core.interactiveshell import InteractiveShell
+
+%matplotlib inline
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Exploring Data
+# MAGIC ## 1.1 - Testing if GPU is present
+
+# COMMAND ----------
+
+## Optional -- testing GPU support to tensorflow
+import tensorflow as tf
+print(tf.__version__)
+
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # 2 - Load Dataset and Distinguishing Attributes
+
+# COMMAND ----------
+
+datapath = "./data/Titanic"
+
+# COMMAND ----------
+
+df_train = pd.read_csv(os.path.join(datapath,'kaggle_titanic_train.csv'))
+# df_test = pd.read_csv(os.path.join(datapath,'kaggle_titanic_test.csv')) No labels
 
 # COMMAND ----------
 
@@ -131,37 +143,31 @@ df_train.head()
 
 # COMMAND ----------
 
-df_train.info()
+df_train.info(verbose=True, show_counts=True)
 
 # COMMAND ----------
 
-df_train.dtypes
+#print(df_train.columns)
+print(df_train.select_dtypes(include='number').columns)
+print(df_train.select_dtypes(include='object').columns)
+print(df_train.select_dtypes(include='category').columns)
 
 # COMMAND ----------
 
-df_train.dtypes[df_train.dtypes.map(lambda x: x=='int64')]
-
-# COMMAND ----------
-
-df_train.dtypes[df_train.dtypes.map(lambda x: x=='float64')]
-
-# COMMAND ----------
-
-df_train.dtypes[df_train.dtypes.map(lambda x: x=='object')]
-
-# COMMAND ----------
-
-df_train.columns
+print(df_train.dtypes)
+#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='int64')])
+#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='float64')])
+#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='object')])
 
 # COMMAND ----------
 
 for cat in df_train.columns:
-    print("Number of levels in category '{0}': \b {1:2.2f} ".format(cat, df_train[cat].unique().size))
+    print(f"Number of levels in category '{cat}': \b {df_train[cat].unique().size:2.2f} ")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Describing the numeric values
+# MAGIC ## 2.1 - Examining the numeric values
 
 # COMMAND ----------
 
@@ -170,185 +176,24 @@ df_train.describe()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Examining the categorical values
+# MAGIC ## 2.2 - Examining the categorical values (first 20)
 
 # COMMAND ----------
 
 # There are many values for name and ticket
 
-for cat in ['Sex', 'Survived', 'Pclass', 'SibSp', 'Embarked', 'Cabin']:
-    print("Unique values for category '{0}': \b {1} ".format(cat, df_train[cat].unique()))
-
-# COMMAND ----------
-
-print(df_train.Survived.value_counts())
+for cat in df_train.select_dtypes(include='object').columns:
+    print(f"Unique values for category '{cat}': \b {df_train[cat].unique()[0:20]}\n")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Survived by sex:
+# MAGIC ## 2.3 - Checking for missing values  
+# MAGIC This part demands a closer look to check if there are missing values not immediately identifiable  
 
 # COMMAND ----------
 
-df_train.groupby('Sex').Survived.value_counts()
-
-# COMMAND ----------
-
-df_by_sex = df_train.groupby('Sex')
-df_by_sex.describe()
-
-# COMMAND ----------
-
-# Split the survived passengers to male and female
-males = df_train[df_train['Sex'] == 'male']
-survived_males = df_train[(df_train['Sex']=='male')&(df_train['Survived']==1)]
-
-females = df_train[df_train['Sex'] == 'female']
-survived_females = df_train[(df_train['Sex']=='female')&(df_train['Survived']==1)]
-
-# COMMAND ----------
-
-print(females["Survived"].value_counts())
-
-sns.kdeplot(females['Age'], label = 'all females', shade = False, alpha = 0.8)
-sns.kdeplot(survived_females['Age'], label = 'survived females', shade = False, alpha = 0.8)
-
-# label the plot
-plt.xlabel('Age', size = 20)
-plt.ylabel('Density', size = 20)
-plt.title('Density Plot of Female Titanic Passengers by Age', size = 20)
-
-# COMMAND ----------
-
-print(males["Survived"].value_counts())
-
-sns.kdeplot(males['Age'], label = 'all males', shade = False, alpha = 0.8)
-sns.kdeplot(survived_males['Age'], label = 'survived males', shade = False, alpha = 0.8)
-
-# label the plot
-plt.xlabel('Age', size = 20); plt.ylabel('Density', size = 20)
-plt.title('Density Plot of Male Titanic Passengers by Age', size = 20)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Survived by Pclass
-
-# COMMAND ----------
-
-df_train.groupby('Pclass').Survived.value_counts()
-
-# COMMAND ----------
-
-df_train.groupby(['Pclass']).Survived.value_counts()
-
-# COMMAND ----------
-
-df_by_class = df_train.groupby('Pclass')
-df_by_class.describe()
-
-# COMMAND ----------
-
-sns.barplot(x='Pclass', y='Survived', data=df_train)
-
-# COMMAND ----------
-
-grid = sns.FacetGrid(df_train, col='Survived', row='Pclass', height=4.2, aspect=1.6)
-grid.map(plt.hist, 'Age', alpha=.5, bins=20)
-grid.add_legend();
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Survived by Age
-
-# COMMAND ----------
-
-#df_train['Age'].hist()
-df_train['Age'].dropna().hist(bins=16, range=(0,80), alpha = .5, figsize=(10,6))
-
-# COMMAND ----------
-
-ser, bins = pd.qcut(df_train.Age.dropna(), 5, retbins=True, labels=False)
-print(bins)
-df_train.groupby(ser).Survived.value_counts()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Sex and Pclass
-
-# COMMAND ----------
-
-df_train.groupby(['Pclass']).Sex.value_counts()
-
-# COMMAND ----------
-
-df_train.groupby(['Pclass','Sex']).Survived.value_counts()
-
-# COMMAND ----------
-
-id = pd.crosstab([df_train.Pclass, df_train.Sex], df_train.Survived.astype(float))
-id.columns = (['No', 'Yes'])
-id.columns.name = "Survived"
-id.div(id.sum(1).astype(float), 0)
-
-# COMMAND ----------
-
-# Set-up 3x2 grid for plotting.
-
-fig, sub = plt.subplots(1,3, figsize=(14,10))
-plt.subplots_adjust(wspace=0.4, hspace=0.4)
-
-titles = [" First Class "," Second Class "," Third Class "]
-
-for i, title, ax in zip([1,2,3], titles, sub.flatten()):
-    male_data = males[males['Pclass']==i]
-    female_data = females[females['Pclass']==i]
-    
-    plt_title = title + 'Passengers'
-    sns.kdeplot(male_data['Age'],
-               label = 'male', shade = False, alpha = 0.8,ax=ax);
-    sns.kdeplot(female_data['Age'],
-               label = 'female', shade = False, alpha = 0.8, ax=ax)
-    
-    ax.set_xlabel('Age', size = 14)
-    ax.set_ylabel('Density', size = 14)
-    ax.set_title(plt_title, size = 16)
-    ax.set(xlim=(0))
-    
-plt.show()
-
-# COMMAND ----------
-
-# Set-up 3x2 grid for plotting.
-
-fig, sub = plt.subplots(1,3, figsize=(14,10))
-plt.subplots_adjust(wspace=0.4, hspace=0.4)
-
-titles = [" 1st Class "," 2nd Class "," 3rd Class "]
-
-for i, title, ax in zip([1,2,3], titles, sub.flatten()):
-    male_data = survived_males[survived_males['Pclass']==i]
-    female_data = survived_females[survived_females['Pclass']==i]
-    
-    plt_title = 'Surv.'+ title + 'Passengers'
-    sns.kdeplot(male_data['Age'], label='male', shade=False, alpha=0.8,ax=ax);
-    ax.set_xlabel('Age', size=14)
-    
-    sns.kdeplot(female_data['Age'], label='female', shade=False, alpha=0.8, ax=ax)
-    ax.set_xlabel('Age', size=14)
-    
-    ax.set_ylabel('Density', size=14)
-    ax.set_title(plt_title, size=16)
-    ax.set(xlim=(0))
-    
-plt.show()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Dealing with missing values
+df_train.isnull().sum()
 
 # COMMAND ----------
 
@@ -360,129 +205,292 @@ missing_data.head(5)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC #### Encoding the "Sex" field
+plt.figure(figsize=(12,6))
+sns.heatmap(df_train.isnull(),cbar=False,cmap='viridis')
 
 # COMMAND ----------
 
-df_train['Gender'] = df_train['Sex'].map( {'female': 0, 'male': 1} ).astype(int)
-df_test['Gender'] = df_test['Sex'].map( {'female': 0, 'male': 1} ).astype(int)
+#!pip install missingno
+import missingno as msno
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC #### Filling the null values for Age
+msno.bar(df_train, figsize=(12,6))
 
 # COMMAND ----------
 
-print(len(df_train[df_train['Age'].isnull()]))
-print(len(df_test[df_test['Age'].isnull()]))
+msno.matrix(df_train, figsize=(12,6))
 
 # COMMAND ----------
 
-df_train['AgeFill'] = df_train['Age']
-df_test['AgeFill'] = df_test['Age']
+msno.heatmap(df_train, figsize=(12,6))
 
 # COMMAND ----------
 
-df_train[df_train['Age'].isnull()][['Gender','Pclass','Age','AgeFill']].head(4)
-
-# COMMAND ----------
-
-median_ages = np.zeros((2,3))
-for i in range(0, 2):
-    for j in range(0, 3):
-        median_ages[i,j] = df_train[(df_train['Gender'] == i) & (df_train['Pclass'] == j+1)]['Age'].dropna().median()
-
-median_ages
-
-# COMMAND ----------
-
-for i in range(0, 2):
-    for j in range(0, 3):
-        df_train.loc[(df_train.Age.isnull()) & (df_train.Gender == i) & (df_train.Pclass == j+1),'AgeFill'] = median_ages[i,j]
-        df_test.loc[(df_test.Age.isnull()) & (df_test.Gender == i) & (df_test.Pclass == j+1),'AgeFill'] = median_ages[i,j]
-
-# COMMAND ----------
-
-df_train[df_train['Age'].isnull()][['Gender','Pclass','Age','AgeFill']].head(4)
+msno.dendrogram(df_train, figsize=(12,6))
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Filling the null values for "Embarked"
+# MAGIC # 3 - Data Transformations
+# MAGIC  + Creating Train and Validation sets
+# MAGIC  + Encoding Categorical Fields (Sex, Embarked, Name, Ticket, Cabin) 
+# MAGIC  + Decide how to fill the Missing Values (Embarked, Cabin, Age)  
+# MAGIC  + Standardizing Numerical Fields (Age, Pclass, SibSp, Parch, Fare) + Encoded Categorical Fields
+# MAGIC  + Encoding Target variable (Survived))¶
 
 # COMMAND ----------
 
-df_train[df_train['Embarked'].isnull()]
+# https://scikit-learn.org/stable/modules/cross_validation.html
+from sklearn import model_selection
 
-# COMMAND ----------
+# https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
+from sklearn.preprocessing import OneHotEncoder
 
-df_train[59:64]
+# https://scikit-learn.org/stable/modules/impute.html
+from sklearn.impute import SimpleImputer
 
-# COMMAND ----------
+# https://scikit-learn.org/stable/modules/generated/sklearn.impute.IterativeImputer.html
+from sklearn.experimental import enable_iterative_imputer 
+from sklearn.impute import IterativeImputer
 
-df_train[826:832]
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Associating the missing values to the most likely class
-
-# COMMAND ----------
-
-df_train['Embarked'] = df_train['Embarked'].map({np.nan:1,'C':1, 'Q':2,'S':3} ).astype(int)
-df_test['Embarked'] = df_test['Embarked'].map({np.nan:1,'C':1, 'Q':2,'S':3} ).astype(int)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### One-Hot-Enconding the field "Embarked"
-
-# COMMAND ----------
-
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
-lb = LabelBinarizer()
-mlb = MultiLabelBinarizer()
-
-# COMMAND ----------
-
-df_train.groupby(['Embarked']).Survived.value_counts()
-
-# COMMAND ----------
-
-df_train.groupby(['Embarked']).Fare.mean()
-
-# COMMAND ----------
-
-embarked = pd.DataFrame(lb.fit_transform(df_train['Embarked'].values), columns=['Emb1','Emb2','Emb3'])
-df_train = pd.concat([df_train, embarked], axis=1)
-
-# COMMAND ----------
-
-embarked = pd.DataFrame(lb.fit_transform(df_test['Embarked'].values), columns=['Emb1','Emb2','Emb3'])
-df_test = pd.concat([df_test, embarked], axis=1)
+# https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelBinarizer.html
+from sklearn.preprocessing import LabelBinarizer
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### One-Hot-Enconding the field "Cabin"
+# MAGIC ## 3.1 - Creating cross-validation subsets:  
 
 # COMMAND ----------
 
-df_train['Cabin'].value_counts()
+df_train.drop(["PassengerId"], axis=1, inplace=True)
+y = df_train.pop("Survived")
+y
 
 # COMMAND ----------
 
-CabinTrans = pd.DataFrame(mlb.fit_transform([{str(val)} for val in df_train['Cabin'].values]))
+X_train, X_test, y_train, y_test = model_selection.train_test_split(df_train, y, test_size=0.2, random_state=0)
+
+X_train.reset_index(drop=True, inplace=True)
+X_test.reset_index(drop=True, inplace=True)
+y_train.reset_index(drop=True, inplace=True)
+y_test.reset_index(drop=True, inplace=True)
+
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
 
 # COMMAND ----------
 
-CabinTrans.head()
+X_train.head()
 
 # COMMAND ----------
 
-#df_train = pd.concat([df_train, CabinTrans], axis=1)
+# MAGIC %md
+# MAGIC ## 3.2 - Transforming Sex/Gender (stateful/binary)  
+
+# COMMAND ----------
+
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X_train['Sex'].values.reshape(-1, 1))
+
+# COMMAND ----------
+
+enc.categories_[0]
+
+# COMMAND ----------
+
+gender_train = pd.DataFrame(enc.transform(X_train['Sex'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0], dtype=np.int8)
+gender_test = pd.DataFrame(enc.transform(X_test['Sex'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0], dtype=np.int8)
+
+# COMMAND ----------
+
+gender_train[0:2]
+
+# COMMAND ----------
+
+X_train.drop(['Sex'], axis=1, inplace=True)
+X_train = pd.concat([X_train, gender_train], axis=1)
+X_test.drop(['Sex'], axis=1, inplace=True)
+X_test = pd.concat([X_test, gender_test], axis=1)
+X_train.head(5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3.3 - Transforming Embarked (stateful)  
+# MAGIC  We can decide to substitute the missing values using a missing value imputation technique, or simply encoding the missing values as an additional category using OHE
+
+# COMMAND ----------
+
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X_train['Embarked'].values.reshape(-1, 1))
+
+# COMMAND ----------
+
+embarked_train = pd.DataFrame(enc.transform(X_train['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+embarked_test = pd.DataFrame(enc.transform(X_test['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+
+# COMMAND ----------
+
+embarked_train[0:2]
+
+# COMMAND ----------
+
+X_train.drop(['Embarked'], axis=1, inplace=True)
+X_train = pd.concat([X_train, embarked_train], axis=1)
+X_test.drop(['Embarked'], axis=1, inplace=True)
+X_test = pd.concat([X_test, embarked_test], axis=1)
+X_train.head(5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3.4 - Transforming Name (stateful)  
+# MAGIC Name is a textual field. We can be very creative when deciding to create features, vectorizing every word, etc.  
+# MAGIC In this notebook, we will just extract the titles and surnames and create features out of it.  
+
+# COMMAND ----------
+
+# Create function that take name and separates it into title, family name and deletes all puntuation from name column:
+def name_sep(data):
+    families=[]
+    titles = []
+    new_name = []
+    #for each row in dataset:
+    for i in range(len(data)):
+        name = data.iloc[i]
+        # extract name inside brackets into name_bracket:
+        if '(' in name:
+            name_no_bracket = name.split('(')[0] 
+        else:
+            name_no_bracket = name
+            
+        family = name_no_bracket.split(",")[0]
+        title = name_no_bracket.split(",")[1].strip().split(" ")[0]
+        
+        #remove punctuations accept brackets:
+        for c in string.punctuation:
+            name = name.replace(c,"").strip()
+            family = family.replace(c,"").strip()
+            title = title.replace(c,"").strip()
+            
+        families.append(family)
+        titles.append(title)
+        new_name.append(name)
+            
+    return families, titles, new_name 
+
+# COMMAND ----------
+
+dict_train_name = dict(zip(['surname', 'title', 'newname'], name_sep(X_train["Name"])))
+X_train_name = pd.DataFrame(dict_train_name)
+dict_test_name = dict(zip(['surname', 'title', 'newname'], name_sep(X_test["Name"])))
+X_test_name = pd.DataFrame(dict_test_name)
+
+X_train_name.head()
+
+# COMMAND ----------
+
+X_train_name.title.value_counts()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Let's reduce the feature space converting some equivalent titles:
+
+# COMMAND ----------
+
+X_train_name['title'] = X_train_name['title'].replace(['Ms', 'Mlle'],'Miss')
+X_train_name['title'] = X_train_name['title'].replace(['Mme'],'Mrs')
+X_train_name['title'] = X_train_name['title'].replace(['Dr','Rev','the','Jonkheer','Lady','Sir', 'Don'],'Nobles')
+X_train_name['title'] = X_train_name['title'].replace(['Major','Col', 'Capt'],'Navy')
+
+X_test_name['title'] = X_test_name['title'].replace(['Ms', 'Mlle'],'Miss')
+X_test_name['title'] = X_test_name['title'].replace(['Mme'],'Mrs')
+X_test_name['title'] = X_test_name['title'].replace(['Dr','Rev','the','Jonkheer','Lady','Sir', 'Don'],'Nobles')
+X_test_name['title'] = X_test_name['title'].replace(['Major','Col', 'Capt'],'Navy')
+
+# COMMAND ----------
+
+X_train_name.title.value_counts()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 3.4.1 - Encoding Title
+
+# COMMAND ----------
+
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X_train_name['title'].values.reshape(-1, 1))
+
+# COMMAND ----------
+
+title_train = pd.DataFrame(enc.transform(X_train_name['title'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+title_test = pd.DataFrame(enc.transform(X_test_name['title'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+
+# COMMAND ----------
+
+title_train.head(5)
+
+# COMMAND ----------
+
+X_train.drop(['Name'], axis=1, inplace=True)
+X_train = pd.concat([X_train, title_train], axis=1)
+X_test.drop(['Name'], axis=1, inplace=True)
+X_test = pd.concat([X_test, title_test], axis=1)
+X_train.head(5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 3.4.2 - Encoding Surname
+# MAGIC First let's examine the frequency of surnames:  
+
+# COMMAND ----------
+
+X_train_name.surname.value_counts().plot(kind="hist", figsize=(12,4))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Given that most of the surnames are unique, let's just use a frequency encoder
+
+# COMMAND ----------
+
+surnames_train = pd.Series(X_train_name.surname.value_counts().values, name="Surname")
+X_train = pd.concat([X_train, surnames_train], axis=1)
+
+surnames_test = pd.Series(X_test_name.surname.value_counts().values, name="Surname")
+X_test = pd.concat([X_test, surnames_test], axis=1)
+
+X_train.head(5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3.5 - Transforming Ticket (stateless)  
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC We can indeed data mine out some interesting relationship from Ticket number. But I think it is best to drop it.  
+# MAGIC We could find some relationship between Pclass and Ticket number, and although one could see that there might be some relationship between them, it is not very strong  
+# MAGIC We decided to drop this variable as well.  
+
+# COMMAND ----------
+
+X_train.drop(['Ticket'], axis=1, inplace=True)
+X_test.drop(['Ticket'], axis=1, inplace=True)
+X_train.head(5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3.6 - Transforming Cabin (stateful)  
 
 # COMMAND ----------
 
@@ -494,9 +502,12 @@ CabinTrans.head()
 
 # COMMAND ----------
 
-import re
+X_train['Cabin'].value_counts()
+
+# COMMAND ----------
+
 deck = {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6, "G": 7, "U": 8}
-data = [df_train, df_test]
+data = [X_train, X_test]
 
 for dataset in data:
     dataset['Cabin'] = dataset['Cabin'].fillna("U0")
@@ -507,214 +518,70 @@ for dataset in data:
 
 # COMMAND ----------
 
-df_train.head()
+X_train.drop(['Cabin'], axis=1, inplace=True)
+X_test.drop(['Cabin'], axis=1, inplace=True)
+
+X_train.head(5)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Creating a feature for number of relatives
+# MAGIC ## 3.7 - Transforming Age (stateful)  
+# MAGIC We will use the iterative inputer that chooses to fill the missing values using a model with the other features  
 
 # COMMAND ----------
 
-df_train['FamilySize'] = df_train['SibSp'] + df_train['Parch']
-df_train['Age*Class'] = df_train.AgeFill * df_train.Pclass
-
-df_test['FamilySize'] = df_test['SibSp'] + df_test['Parch']
-df_test['Age*Class'] = df_test.AgeFill * df_test.Pclass
+imp_mean = IterativeImputer(random_state=0)
 
 # COMMAND ----------
 
-axes = sns.catplot(x='FamilySize', y='Survived', kind='point' , data=df_train, aspect = 2.5, )
+imp_mean.fit(X_train)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC #### Extract the Titles from "Name", so that we can build a new feature out of that. (TBD)
-
-# COMMAND ----------
-
-#data = [df_train, df_test]
-#titles = {"Mr": 1, "Miss": 2, "Mrs": 3, "Master": 4, "Rare": 5}
-
-#for dataset in data:
-#    # extract titles
-#    dataset['Title'] = dataset.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
-#    # replace titles with a more common title or as Rare
-#    dataset['Title'] = dataset['Title'].replace(['Lady', 'Countess','Capt', 'Col','Don', 'Dr',\
-#                                            'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare')
-#    dataset['Title'] = dataset['Title'].replace('Mlle', 'Miss')
-#    dataset['Title'] = dataset['Title'].replace('Ms', 'Miss')
-#    dataset['Title'] = dataset['Title'].replace('Mme', 'Mrs')
-#    # convert titles into numbers
-#    dataset['Title'] = dataset['Title'].map(titles)
-#    # filling NaN with 0, to get safe
-#    dataset['Title'] = dataset['Title'].fillna(0)
+X_train = pd.DataFrame(imp_mean.transform(X_train.values), columns=X_train.columns)
+X_test = pd.DataFrame(imp_mean.transform(X_test.values), columns=X_test.columns)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Fare per Person (TBD)
+# MAGIC ## 3.8 - Standardizing values
+# MAGIC + Check there are no more missing values   
+# MAGIC + Check all features are numeric  
 
 # COMMAND ----------
 
-#for dataset in data:
-#    dataset['Fare_Per_Person'] = dataset['Fare']/(dataset['FamilySize']+1)
-#    dataset['Fare_Per_Person'] = dataset['Fare_Per_Person'].astype(int)
-
-#df_train.head(10)
+print(X_train.isnull().sum().sum())
+print(X_test.isnull().sum().sum())
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ### Exploring "Ticket"
+X_train.head()
 
 # COMMAND ----------
 
-df_train['Ticket'].describe()
+X_test.head()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC Since the Ticket attribute has 681 unique tickets, it will be a bit tricky to convert them into useful categories. So we will drop it from the dataset.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Discarding unused columns for predictions
-
-# COMMAND ----------
-
-df_train2 = df_train.drop(['Age','Name', 'Sex', 'Ticket', 'Cabin', 'Embarked'], axis=1)
-df_train2 = df_train2.dropna()
-
-df_test2 = df_test.drop(['Age','Name', 'Sex', 'Ticket', 'Cabin', 'Embarked'], axis=1)
-df_test2 = df_test2.dropna()
-
-# COMMAND ----------
-
-df_train2.head()
-
-# COMMAND ----------
-
-df_test2.head()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Running some correlation hypothesis:
-
-# COMMAND ----------
-
-from scipy import stats
-stats.chisqprob = lambda chisq, df: stats.chi2.sf(chisq, df)
-## https://github.com/statsmodels/statsmodels/issues/3931 waiting for fixes
-
-y = df_train2.Survived
-X = df_train2.Gender
-model = sm.Logit(y, X)
-results = model.fit()
-print(results.summary())
-
-# COMMAND ----------
-
-y = df_train2.Survived
-X = df_train2[['Gender','Pclass','AgeFill']]
-model = sm.Logit(y, X)
-results = model.fit()
-print(results.summary())
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Preparing Data for predictions
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Renaming target class (For the TPOT genetic algorithm) 
-
-# COMMAND ----------
-
-df_train2.rename(columns={'Survived': 'class'}, inplace=True)
-df_train2.head(3)
-
-# COMMAND ----------
-
-df_test2.head(3)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Creating Numpy vectors and adjusting features scales:   
-# MAGIC 
-# MAGIC http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html  
-
-# COMMAND ----------
-
+# http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html  
 from sklearn.preprocessing import StandardScaler
+
+# COMMAND ----------
+
 scaler = StandardScaler()
 
-df_train2.iloc[:,2:] = scaler.fit_transform(df_train2.iloc[:,2:])  #Excludes PassengerId and class
-df_test2.iloc[:,1:] = scaler.fit_transform(df_test2.iloc[:,1:])  #Excludes PassengerId
+for column in X_train.columns:
+    scaler.fit(X_train[column].values.reshape(-1, 1))
+    X_train[column] = scaler.transform(X_train[column].values.reshape(-1, 1))
+    X_test[column] = scaler.transform(X_test[column].values.reshape(-1, 1))
 
-# COMMAND ----------
-
-X = df_train2.iloc[:,2:].values
-y = df_train2.iloc[:,1].values
-X_val = df_test2.iloc[:,1:].values
-
-# COMMAND ----------
-
-print(X.shape)
-print(y.shape)
-print(X_val.shape)
+X_train.head()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Creating cross-validation subsets:  
-# MAGIC 
-# MAGIC http://scikit-learn.org/stable/modules/cross_validation.html  
-# MAGIC http://www.analyticsvidhya.com/blog/2015/05/k-fold-cross-validation-simple/  
-# MAGIC http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.cross_val_score.html  
-# MAGIC http://stackoverflow.com/questions/25375203/identical-learning-curves-on-subsequent-runs-using-shufflesplit  
-# MAGIC http://stackoverflow.com/questions/28064634/random-state-pseudo-random-numberin-scikit-learn  
-
-# COMMAND ----------
-
-from sklearn import model_selection
-
-## Creating validation set with cross validation
-X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.3, random_state=0)
-
-## Using stratified k-folds
-#skf = model_selection.StratifiedKFold(n_splits=1)
-#skf.get_n_splits(X, y)
-
-cv = model_selection.StratifiedKFold(n_splits=5)
-
-
-def mean_scores_cv(clf, cv, X, y):
-    scores = model_selection.cross_val_score(clf, X, y, 
-                                              scoring=None, 
-                                              cv=cv, 
-                                              n_jobs=1,
-                                              verbose=0,
-                                              fit_params=None,
-                                              pre_dispatch='2*n_jobs')
-    return scores.mean()
-
-# COMMAND ----------
-
-print(X_train.shape)
-print(y_train.shape)
-print(X_test.shape)
-print(y_test.shape)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Balancing the classes
+# MAGIC ## 3.9 - Balancing the classes
 
 # COMMAND ----------
 
@@ -724,12 +591,14 @@ print(len(y_train[y_train == 1]))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Oversampling the minority class  
-# MAGIC http://contrib.scikit-learn.org/imbalanced-learn/  
+# MAGIC ### 3.9.1 - Oversampling the minority class  
 
 # COMMAND ----------
 
+# http://contrib.scikit-learn.org/imbalanced-learn/  
 from imblearn.over_sampling import SMOTE
+
+# COMMAND ----------
 
 smote = SMOTE(random_state=0)
 
