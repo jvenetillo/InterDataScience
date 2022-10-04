@@ -67,7 +67,12 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # 1 - (Installing and) Loading Basic Packages
+# MAGIC # 1 - Preparing Environment
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 1.1 - (Installing and) Loading Basic Packages
 
 # COMMAND ----------
 
@@ -75,9 +80,10 @@
 #!pip install -U -q  imbalanced-learn 
 #!pip install -U -q  xgboost 
 #!pip install -U -q  lightgbm 
-#!pip install -U -q  rgf_python 
+!pip install -U -q  rgf_python 
 #!pip install -U -q  forestci
-#!pip install -U -q  tpot 
+!pip install -U -q  tpot 
+# pip install -U -q pycaret
 #!pip install -U -q  tensorflow tensorboard 
 #!pip install -U -q  torch torchvision 
 #!pip install -U -q  delayed
@@ -107,12 +113,15 @@ import statsmodels.formula.api as smf
 from IPython.display import display, Image
 from IPython.core.interactiveshell import InteractiveShell
 
+import warnings
+warnings.filterwarnings('ignore')
+
 %matplotlib inline
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 1.1 - Testing if GPU is present
+# MAGIC ## 1.2 - Testing if GPU is present
 
 # COMMAND ----------
 
@@ -126,7 +135,17 @@ print(device_lib.list_local_devices())
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # 2 - Load Dataset and Distinguishing Attributes
+# MAGIC ## 1.3 - Disabling [MLFlow autologging](https://docs.databricks.com/mlflow/databricks-autologging.html)  
+
+# COMMAND ----------
+
+import mlflow
+mlflow.autolog(disable=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # 2 - Loading Dataset and Distinguishing Attributes
 
 # COMMAND ----------
 
@@ -135,7 +154,7 @@ datapath = "./data/Titanic"
 # COMMAND ----------
 
 df_train = pd.read_csv(os.path.join(datapath,'kaggle_titanic_train.csv'))
-# df_test = pd.read_csv(os.path.join(datapath,'kaggle_titanic_test.csv')) No labels
+# df_test = pd.read_csv(os.path.join(datapath,'kaggle_titanic_test.csv')) # No labels, not using
 
 # COMMAND ----------
 
@@ -189,7 +208,7 @@ for cat in df_train.select_dtypes(include='object').columns:
 
 # MAGIC %md
 # MAGIC ## 2.3 - Checking for missing values  
-# MAGIC This part demands a closer look to check if there are missing values not immediately identifiable  
+# MAGIC This part demands a closer look to check if there are missing values not immediately identifiable
 
 # COMMAND ----------
 
@@ -207,6 +226,11 @@ missing_data.head(5)
 
 plt.figure(figsize=(12,6))
 sns.heatmap(df_train.isnull(),cbar=False,cmap='viridis')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Using missingno library to explore missing values
 
 # COMMAND ----------
 
@@ -233,7 +257,7 @@ msno.dendrogram(df_train, figsize=(12,6))
 
 # MAGIC %md
 # MAGIC # 3 - Data Transformations
-# MAGIC  + Creating Train and Validation sets
+# MAGIC  + Creating Train and Test subsets
 # MAGIC  + Encoding Categorical Fields (Sex, Embarked, Name, Ticket, Cabin) 
 # MAGIC  + Decide how to fill the Missing Values (Embarked, Cabin, Age)  
 # MAGIC  + Standardizing Numerical Fields (Age, Pclass, SibSp, Parch, Fare) + Encoded Categorical Fields
@@ -260,7 +284,7 @@ from sklearn.preprocessing import LabelBinarizer
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.1 - Creating cross-validation subsets:  
+# MAGIC ## 3.1 - Creating train & test subsets:
 
 # COMMAND ----------
 
@@ -289,7 +313,7 @@ X_train.head()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.2 - Transforming Sex/Gender (stateful/binary)  
+# MAGIC ## 3.2 - Transforming Sex/Gender (stateful/binary)
 
 # COMMAND ----------
 
@@ -331,7 +355,13 @@ enc.fit(X_train['Embarked'].values.reshape(-1, 1))
 # COMMAND ----------
 
 embarked_train = pd.DataFrame(enc.transform(X_train['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+embarked_train.rename({np.nan: "U"}, axis='columns', inplace=True)   #Rename the column with name "nan" to avoid further problems
 embarked_test = pd.DataFrame(enc.transform(X_test['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
+embarked_test.rename({np.nan: "U"}, axis='columns', inplace=True)
+
+# COMMAND ----------
+
+embarked_train.columns
 
 # COMMAND ----------
 
@@ -350,7 +380,7 @@ X_train.head(5)
 # MAGIC %md
 # MAGIC ## 3.4 - Transforming Name (stateful)  
 # MAGIC Name is a textual field. We can be very creative when deciding to create features, vectorizing every word, etc.  
-# MAGIC In this notebook, we will just extract the titles and surnames and create features out of it.  
+# MAGIC In this notebook, we will just extract the titles and surnames and create features out of it.
 
 # COMMAND ----------
 
@@ -448,7 +478,7 @@ X_train.head(5)
 
 # MAGIC %md
 # MAGIC ### 3.4.2 - Encoding Surname
-# MAGIC First let's examine the frequency of surnames:  
+# MAGIC First let's examine the frequency of surnames:
 
 # COMMAND ----------
 
@@ -472,14 +502,14 @@ X_train.head(5)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.5 - Transforming Ticket (stateless)  
+# MAGIC ## 3.5 - Transforming Ticket (stateless)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC We can indeed data mine out some interesting relationship from Ticket number. But I think it is best to drop it.  
 # MAGIC We could find some relationship between Pclass and Ticket number, and although one could see that there might be some relationship between them, it is not very strong  
-# MAGIC We decided to drop this variable as well.  
+# MAGIC We decided to drop this variable as well.
 
 # COMMAND ----------
 
@@ -490,7 +520,7 @@ X_train.head(5)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.6 - Transforming Cabin (stateful)  
+# MAGIC ## 3.6 - Transforming Cabin (stateful)
 
 # COMMAND ----------
 
@@ -527,7 +557,7 @@ X_train.head(5)
 
 # MAGIC %md
 # MAGIC ## 3.7 - Transforming Age (stateful)  
-# MAGIC We will use the iterative inputer that chooses to fill the missing values using a model with the other features  
+# MAGIC We will use the iterative inputer that chooses to fill the missing values using a model with the other features
 
 # COMMAND ----------
 
@@ -545,9 +575,10 @@ X_test = pd.DataFrame(imp_mean.transform(X_test.values), columns=X_test.columns)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.8 - Standardizing values
+# MAGIC ## 3.8 - Dealing with numerif fields values
 # MAGIC + Check there are no more missing values   
-# MAGIC + Check all features are numeric  
+# MAGIC + Check all features are numeric
+# MAGIC + Standardizing features
 
 # COMMAND ----------
 
@@ -581,7 +612,9 @@ X_train.head()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.9 - Balancing the classes
+# MAGIC ## 3.9 - Balancing the classes  
+# MAGIC 
+# MAGIC As the unbalance is not that big, you can experiment running the algorithms without balancing as well
 
 # COMMAND ----------
 
@@ -591,7 +624,7 @@ print(len(y_train[y_train == 1]))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 3.9.1 - Oversampling the minority class  
+# MAGIC ### 3.9.1 - Oversampling the minority class
 
 # COMMAND ----------
 
@@ -610,14 +643,20 @@ print(X_train.shape)
 print(y_train.shape)
 print(len(y_train[y_train == 0]))
 print(len(y_train[y_train == 1]))
+print(X_test.shape)
+print(y_test.shape)
+print(len(y_test[y_test == 0]))
+print(len(y_test[y_test == 1]))
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Importing modules for evaluation of the models
-# MAGIC 
-# MAGIC http://stats.stackexchange.com/questions/95797/how-to-split-the-dataset-for-cross-validation-learning-curve-and-final-evaluat   
-# MAGIC http://scikit-learn.org/stable/modules/cross_validation.html  
+# MAGIC # 4 - Metrics and Evaluation Functions
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 4.1 - Importing Metrics 
 
 # COMMAND ----------
 
@@ -632,12 +671,41 @@ from sklearn.metrics import average_precision_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import precision_recall_curve
 
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Creating functions to help evaluate the models
+# MAGIC ## 4.2 - Creating Cross validation folds   
+# MAGIC This will make more precise the evaluation of the classfiers when doing grid search  
+# MAGIC #https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
 
 # COMMAND ----------
+
+#cv = model_selection.StratifiedKFold(n_splits=5)
+cv = model_selection.KFold(n_splits=5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 4.3 - Creating functions to evaluate the models
+# MAGIC 
+# MAGIC These functions can be put aside in a python file and imported, to make the code less cluttered
+
+# COMMAND ----------
+
+def mean_scores_cv(clf, cv, X, y):
+    scores = model_selection.cross_val_score(clf, X, y, 
+                                             scoring=None, 
+                                             cv=cv, 
+                                             n_jobs=1,
+                                             verbose=0,
+                                             fit_params=None,
+                                             pre_dispatch='2*n_jobs')
+    return scores.mean()
+
+
 
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
@@ -647,7 +715,7 @@ def plot_confusion_matrix(cm, classes,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-    plt.figure(figsize=(8,8))
+    plt.figure(figsize=(5,5))
     plt.imshow(cm, interpolation='nearest', cmap=cmap, aspect='auto')
     plt.title(title)
     plt.colorbar()
@@ -672,6 +740,9 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.show()
+    
+    
     
 def clf_eval(clf, X, y_true, classes=['Perished', 'Survived']):
     y_pred = clf.predict(X)
@@ -688,174 +759,36 @@ def clf_eval(clf, X, y_true, classes=['Perished', 'Survived']):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Testing classifiers of different families:  
-# MAGIC 
-# MAGIC ### Linear Classifiers
+# MAGIC # 5 - Running Models
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 5.1 - Linear Classifiers
 # MAGIC 
 # MAGIC A linear classifier achieves this by making a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a feature vector. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Support Vector Machines](https://www.analyticsvidhya.com/blog/2021/10/support-vector-machinessvm-a-complete-guide-for-beginners/)  
-# MAGIC 
-# MAGIC Support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other, making it a non-probabilistic binary linear classifier. An SVM model is a representation of the examples as points in space, mapped so that the examples of the separate categories are divided by a clear gap that is as wide as possible. New examples are then mapped into that same space and predicted to belong to a category based on which side of the gap they fall.
-# MAGIC 
-# MAGIC In addition to performing linear classification, SVMs can efficiently perform a non-linear classification using what is called the kernel trick, implicitly mapping their inputs into high-dimensional feature spaces.
-# MAGIC 
-# MAGIC An SVM will find a hyperplane or a boundary between the two classes of data that maximizes. There are other planes as well which can separate the two classes, but only the SVM hyperplane can maximize the margin between the classes.
-# MAGIC 
-# MAGIC B0 + (B1 * X1) + (B2 * X2) = 0 where, B1 and B2 determines the slope of the line and B0 (intercept) found by the learning algorithm. X1 and X2 are the two input variables.
-# MAGIC 
-# MAGIC ![SVM](../Images/SVM.jpeg)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Choosing the best parameters using [GridSearchCV](http://scikit-learn.org/stable/modules/grid_search.html) or [RandomizedSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html)  
-# MAGIC   
-
-# COMMAND ----------
-
-# MAGIC %%time
-# MAGIC 
-# MAGIC #http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
-# MAGIC from sklearn import svm
-# MAGIC 
-# MAGIC estimator = svm.SVC()
-# MAGIC 
-# MAGIC kernels = ['linear', 'poly', 'rbf', 'sigmoid']
-# MAGIC Cs = np.linspace(0.1,3,7)
-# MAGIC degrees = [2,3,4,5]
-# MAGIC gammas = np.logspace(-5, 0, 7)
-# MAGIC 
-# MAGIC param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
-# MAGIC 
-# MAGIC ## Grid Search (more exhaustive)
-# MAGIC #clf_svc = model_selection.GridSearchCV(estimator=estimator,
-# MAGIC #                                       cv=cv,
-# MAGIC #                                       param_grid=param_grid, 
-# MAGIC #                                       n_jobs=-1).fit(X_train, y_train)
-# MAGIC 
-# MAGIC ## Randomized (faster)
-# MAGIC clf_svc = model_selection.RandomizedSearchCV(estimator=estimator,
-# MAGIC                                              cv=cv,
-# MAGIC                                              param_distributions=param_grid, 
-# MAGIC                                              n_jobs=-1).fit(X_train, y_train)
-# MAGIC 
-# MAGIC 
-# MAGIC with open(os.path.join(outputs,'best_parameters_svm.pickle'), 'wb') as f:
-# MAGIC     pickle.dump(clf_svc,f)
-# MAGIC 
-# MAGIC with open(os.path.join(outputs,'best_parameters_svm.pickle'), 'rb') as f:
-# MAGIC     clf_svc = pickle.load(f)
-# MAGIC 
-# MAGIC print(clf_svc.best_score_)
-# MAGIC print(clf_svc.best_estimator_.kernel)
-# MAGIC print(clf_svc.best_estimator_.C)
-# MAGIC print(clf_svc.best_estimator_.degree)
-# MAGIC print(clf_svc.best_estimator_.gamma)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Now, let's run with the best hiperparameters
-
-# COMMAND ----------
-
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_svc2 = svm.SVC(kernel=clf_svc.best_estimator_.kernel,
-# MAGIC                    C=clf_svc.best_estimator_.C,
-# MAGIC                    degree=clf_svc.best_estimator_.degree, 
-# MAGIC                    gamma=clf_svc.best_estimator_.gamma, 
-# MAGIC                    coef0=0.0, 
-# MAGIC                    shrinking=True, 
-# MAGIC                    probability=False, 
-# MAGIC                    tol=0.001, 
-# MAGIC                    cache_size=200, 
-# MAGIC                    class_weight=None, 
-# MAGIC                    verbose=False, 
-# MAGIC                    max_iter=-1, 
-# MAGIC                    random_state=0).fit(X_train, y_train)
-# MAGIC 
-# MAGIC roc_svc2 = clf_eval(clf_svc2, X_test, y_test)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### For this first classifier, we'll also display the [learning curve](http://scikit-learn.org/stable/modules/generated/sklearn.learning_curve.learning_curve.html)  
-
-# COMMAND ----------
-
-# MAGIC %%time
-# MAGIC 
-# MAGIC def plot_learning_curve(estimator, 
-# MAGIC                         title, 
-# MAGIC                         X, 
-# MAGIC                         y, 
-# MAGIC                         ylim=None, 
-# MAGIC                         cv=None,
-# MAGIC                         n_jobs=-1, 
-# MAGIC                         train_sizes=np.linspace(.1, 1.0, 5)):
-# MAGIC     
-# MAGIC     plt.figure(figsize=(16,8))
-# MAGIC     plt.title(title)
-# MAGIC     if ylim is not None:
-# MAGIC         plt.ylim(*ylim)
-# MAGIC     plt.xlabel("Training examples")
-# MAGIC     plt.ylabel("Score")
-# MAGIC     train_sizes, train_scores, test_scores = model_selection.learning_curve(estimator, 
-# MAGIC                                                             X, y, cv=cv, 
-# MAGIC                                                             n_jobs=n_jobs, 
-# MAGIC                                                             train_sizes=train_sizes)
-# MAGIC     train_scores_mean = np.mean(train_scores, axis=1)
-# MAGIC     train_scores_std = np.std(train_scores, axis=1)
-# MAGIC     test_scores_mean = np.mean(test_scores, axis=1)
-# MAGIC     test_scores_std = np.std(test_scores, axis=1)
-# MAGIC     
-# MAGIC     plt.grid()
-# MAGIC     plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
-# MAGIC                      train_scores_mean + train_scores_std, alpha=0.1, color="r")
-# MAGIC     plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
-# MAGIC                      test_scores_mean + test_scores_std, alpha=0.1, color="g")
-# MAGIC     plt.plot(train_sizes, train_scores_mean, 'o-', color="r", label="Training score")
-# MAGIC     plt.plot(train_sizes, test_scores_mean, 'o-', color="g", label="Cross-validation score")
-# MAGIC 
-# MAGIC     plt.legend(loc="best")
-# MAGIC     return plt
-
-# COMMAND ----------
-
-title = 'Learning Curves (SVM, kernel:{1}{0} , $\gamma={2:.6f}$)'.format(clf_svc.best_estimator_.degree,
-                                                                         clf_svc.best_estimator_.kernel,
-                                                                         clf_svc.best_estimator_.gamma)
-graph = plot_learning_curve(clf_svc2, title, X_train, y_train, cv=cv)
-#matplotlib.rcdefaults()
-#matplotlib.verbose.set_level('silent')
-graph.show()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### [Logistic Regression](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)  
+# MAGIC ### 5.1.1 - [Logistic Regression](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)  
 # MAGIC 
 # MAGIC Logistic regression is a classification algorithm based on the function which is used at the core of the method, logistic function or sigmoid function. It’s an S-shaped curve that is used to predict a binary outcome (1/0, Yes/No, True/False) given a set of independent variables.
 # MAGIC 
 # MAGIC + It can also be thought of as a special case of linear regression when the outcome variable is categorical, where we are using the log of odds as a dependent variable.
 # MAGIC + It predicts the probability of occurrence of an event by fitting data to a logit function.
 # MAGIC 
-# MAGIC p(X) = e^(b0 + b1*X) / (1 + e^(b0 + b1*X))
+# MAGIC $f(x) = \frac{L}{1 + e^{-k(x-x_0)}} $  
 # MAGIC 
 # MAGIC Logistic regression, or logit regression, or logit model is a regression model where the dependent variable (DV) is categorical. In the binary case, a dependent variable (the output) can take only two values, "0" and "1", which represent outcomes such as pass/fail, win/lose, alive/dead or healthy/sick. Cases where the dependent variable has more than two outcome categories may be analysed in multinomial logistic regression, or, if the multiple categories are ordered, in ordinal logistic regression.
 # MAGIC 
 # MAGIC 
-# MAGIC ![Logistic](../Images/logistic.jpeg)
+# MAGIC ![Logistic](https://www.saedsayad.com/images/LogReg_1.png)
 
 # COMMAND ----------
 
 # MAGIC %%time
-# MAGIC 
+# MAGIC #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 # MAGIC from sklearn.linear_model import LogisticRegression
 # MAGIC 
 # MAGIC clf_lr = LogisticRegression(penalty='l2',
@@ -878,11 +811,56 @@ graph.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Assessing the importance of the features
+# MAGIC ### 5.1.1.2 - Logistic Regression with Grid Search
+# MAGIC 
+# MAGIC For each model, we can also run with hyperparameter search for finding the best parameters
 
 # COMMAND ----------
 
-coefs = pd.Series(clf_lr.coef_[0], index=df_train2.iloc[:,2:].columns)
+# MAGIC %%time
+# MAGIC 
+# MAGIC estimator = LogisticRegression(dual=False, 
+# MAGIC                                penalty='l2',
+# MAGIC                                fit_intercept=True, 
+# MAGIC                                intercept_scaling=1, 
+# MAGIC                                class_weight=None, 
+# MAGIC                                random_state=0, 
+# MAGIC                                solver='saga', 
+# MAGIC                                multi_class='ovr', 
+# MAGIC                                verbose=0, 
+# MAGIC                                warm_start=False, 
+# MAGIC                                n_jobs=1)
+# MAGIC 
+# MAGIC Cs = np.linspace(0,1,10)
+# MAGIC max_iter = [10, 50, 100, 200]
+# MAGIC tol = [1e-5, 1e-4, 1e-3]
+# MAGIC param_grid=dict(C=Cs, max_iter=max_iter)
+# MAGIC 
+# MAGIC 
+# MAGIC clf_lr2 = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
+# MAGIC #clf_lr2 = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
+# MAGIC                                        estimator=estimator,
+# MAGIC                                        cv=cv,                                       ## using cross validation
+# MAGIC                                        n_jobs=1)
+# MAGIC clf_lr2.fit(X_train, y_train)
+# MAGIC 
+# MAGIC print(clf_lr2.best_score_)
+# MAGIC print(clf_lr2.best_estimator_.C)
+# MAGIC print(clf_lr2.best_estimator_.max_iter)
+# MAGIC print(clf_lr2.best_estimator_.tol)
+
+# COMMAND ----------
+
+roc_lr = clf_eval(clf_lr2, X_test, y_test)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 5.1.1.3 - Assessing the importance of the features
+
+# COMMAND ----------
+
+coefs = pd.Series(clf_lr.coef_[0], index=X_train.columns)
 coefs = coefs.sort_values()
 coefs.plot(kind="bar", figsize=(10,6))
 print(coefs.sort_values(ascending = True))
@@ -890,11 +868,14 @@ print(coefs.sort_values(ascending = True))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Precision Recall Curve
+# MAGIC ### 5.1.1.4 -  Precision Recall Curve
 # MAGIC 
-# MAGIC For each person the classifier algorithm has to classify, it computes a probability based on a function and it classifies the person as survived (when the score is bigger the than threshold) or as not survived (when the score is smaller than the threshold). That’s why the threshold plays an important part.
+# MAGIC This graph can be used for all classifiers that expose the probabilities of prediction for the classes:  
+# MAGIC For each person the classifier algorithm has to classify, it computes a probability based on a function  
+# MAGIC It classifies the person as survived (when the score is bigger than the threshold) or as not survived (when the score is smaller than the threshold).  
+# MAGIC That’s why the threshold plays an important part.  
 # MAGIC 
-# MAGIC We will plot the precision and recall with the threshold using matplotlib:
+# MAGIC We will plot the precision and recall while varying the threshold:
 
 # COMMAND ----------
 
@@ -918,7 +899,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Another way is to plot the precision and recall against each other:
+# MAGIC Another way to find the best balance is to plot the precision and recall against each other:
 
 # COMMAND ----------
 
@@ -926,18 +907,20 @@ def plot_precision_vs_recall(precision, recall):
     plt.plot(recall, precision, "g--", linewidth=2.5)
     plt.ylabel("recall", fontsize=19)
     plt.xlabel("precision", fontsize=19)
-    plt.axis([0, 1.5, 0, 1.5])
+    plt.axis([0, 1, 0, 1])
 
-plt.figure(figsize=(14, 7))
+plt.figure(figsize=(8, 6))
 plot_precision_vs_recall(precision, recall)
 plt.show()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Ridge Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html)  
+# MAGIC ### 5.1.2 - [Ridge Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html)  
 # MAGIC 
-# MAGIC Ridge Classifiers addresses some of the problems of Ordinary Least Squares by imposing a penalty on the size of coefficients. The ridge coefficients minimize a penalized residual sum of squares
+# MAGIC Ridge Classifiers addresses some of the problems of Ordinary Least Squares by imposing a penalty on the size of coefficients.  
+# MAGIC The ridge coefficients minimize a penalized residual sum of squares  
+# MAGIC https://stats.stackexchange.com/questions/558900/why-ridgeclassifier-can-be-significantly-faster-than-logisticregression-with-a-h
 
 # COMMAND ----------
 
@@ -960,7 +943,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Perceptron](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html#sklearn.linear_model.Perceptron)
+# MAGIC ### 5.1.3 - [Perceptron](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html#sklearn.linear_model.Perceptron)
 # MAGIC 
 # MAGIC Perceptron is an algorithm for supervised learning of binary classifiers (functions that can decide whether an input, represented by a vector of numbers, belongs to some specific class or not). It is a type of linear classifier, i.e. a classification algorithm that makes its predictions based on a linear predictor function combining a set of weights with the feature vector. The algorithm allows for online learning, in that it processes elements in the training set one at a time.
 
@@ -987,11 +970,13 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Passive Aggressive](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PassiveAggressiveClassifier.html)  
+# MAGIC ### 5.1.4 - [Passive Aggressive](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PassiveAggressiveClassifier.html)  
 # MAGIC 
 # MAGIC https://www.bonaccorso.eu/2017/10/06/ml-algorithms-addendum-passive-aggressive-algorithms/ 
 # MAGIC 
-# MAGIC Passive Aggressive Algorithms are a family of online learning algorithms (for both classification and regression) proposed by Crammer at al. The idea is very simple and their performance has been proofed to be superior to many other alternative methods like Online Perceptron and MIRA (see the original paper in the reference section). Passive: if correct classification, keep the model; Aggressive: if incorrect classification, update to adjust to this misclassified example. In my mind, in passive, the information hidden in the example is not enough for updating; in aggressive, the information shows that at lest this time you are wrong, a better model should modify this mistake.   
+# MAGIC Passive Aggressive Algorithms are a family of online learning algorithms (for both classification and regression) proposed by Crammer at al. The idea is very simple and their performance has been proofed to be superior to many other alternative methods like Online Perceptron and MIRA.  
+# MAGIC Passive: if correct classification, keep the model; Aggressive: if incorrect classification, update to adjust to this misclassified example. 
+# MAGIC In passive, the information hidden in the example is not enough for updating; in aggressive, the information shows that at lest this time you are wrong, a better model should modify this mistake.
 
 # COMMAND ----------
 
@@ -1015,11 +1000,11 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [SGDC Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)  
+# MAGIC ### 5.1.5 - [SGDC Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)  
 # MAGIC 
 # MAGIC The SGDC classifier is a linear classifier (SVM, logistic regression) with SGD training. Implements regularized linear models with stochastic gradient descent (SGD) learning: the gradient of the loss is estimated each sample at a time and the model is updated along the way with a decreasing strength schedule (aka learning rate). SGD allows minibatch (online/out-of-core) learning, see the partial_fit method. For best results using the default learning rate schedule, the data should have zero mean and unit variance.  
 # MAGIC 
-# MAGIC The regularizer is a penalty added to the loss function that shrinks model parameters towards the zero vector using either the squared euclidean norm L2 or the absolute norm L1 or a combination of both (Elastic Net). If the parameter update crosses the 0.0 value because of the regularizer, the update is truncated to 0.0 to allow for learning sparse models and achieve online feature selection.  
+# MAGIC The regularizer is a penalty added to the loss function that shrinks model parameters towards the zero vector using either the squared euclidean norm L2 or the absolute norm L1 or a combination of both (Elastic Net). If the parameter update crosses the 0.0 value because of the regularizer, the update is truncated to 0.0 to allow for learning sparse models and achieve online feature selection.
 
 # COMMAND ----------
 
@@ -1035,7 +1020,7 @@ plt.show()
 # MAGIC                          max_iter=200, 
 # MAGIC                          shuffle=True,
 # MAGIC                          verbose=0,
-# MAGIC                          epsilon=0.1,
+# MAGIC                          epsilon=0.01,
 # MAGIC                          n_jobs=-1,
 # MAGIC                          random_state=0,
 # MAGIC                          learning_rate='optimal',
@@ -1050,7 +1035,62 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### [k-Nearest Neighbors](https://scikit-learn.org/stable/modules/neighbors.html)  
+# MAGIC ### 5.1.6 - [Support Vector Machines](http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
+# MAGIC 
+# MAGIC https://www.analyticsvidhya.com/blog/2021/10/support-vector-machinessvm-a-complete-guide-for-beginners/  
+# MAGIC 
+# MAGIC Support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other, making it a non-probabilistic binary linear classifier. An SVM model is a representation of the examples as points in space, mapped so that the examples of the separate categories are divided by a clear gap that is as wide as possible. New examples are then mapped into that same space and predicted to belong to a category based on which side of the gap they fall.
+# MAGIC 
+# MAGIC In addition to performing linear classification, SVMs can efficiently perform a non-linear classification using what is called the kernel trick, implicitly mapping their inputs into high-dimensional feature spaces.
+# MAGIC 
+# MAGIC An SVM will find a hyperplane or a boundary between the two classes of data that maximizes. There are other planes as well which can separate the two classes, but only the SVM hyperplane can maximize the margin between the classes.
+# MAGIC 
+# MAGIC B0 + (B1 * X1) + (B2 * X2) = 0 where, B1 and B2 determines the slope of the line and B0 (intercept) found by the learning algorithm. X1 and X2 are the two input variables.
+# MAGIC 
+# MAGIC ![SVM](https://www.researchgate.net/publication/331308937/figure/fig1/AS:870140602249216@1584469094771/Illustration-of-support-vector-machine-SVM-to-generalize-the-optimal-separating.ppm)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Choosing the best parameters using [GridSearchCV](http://scikit-learn.org/stable/modules/grid_search.html) or [RandomizedSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.RandomizedSearchCV.html)
+
+# COMMAND ----------
+
+# MAGIC %%time
+# MAGIC 
+# MAGIC from sklearn import svm
+# MAGIC estimator = svm.SVC()
+# MAGIC 
+# MAGIC kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+# MAGIC Cs = np.linspace(0.1,3,7)
+# MAGIC degrees = [2,3,4,5]
+# MAGIC gammas = np.logspace(-5, 0, 7)
+# MAGIC 
+# MAGIC param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
+# MAGIC 
+# MAGIC 
+# MAGIC clf_svc = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
+# MAGIC #clf_svc = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
+# MAGIC                                        estimator=estimator,
+# MAGIC                                        cv=cv,                                       ## using cross validation
+# MAGIC                                        n_jobs=-1)
+# MAGIC 
+# MAGIC clf_svc.fit(X_train, y_train)
+# MAGIC 
+# MAGIC print(clf_svc.best_score_)
+# MAGIC print(clf_svc.best_estimator_.kernel)
+# MAGIC print(clf_svc.best_estimator_.C)
+# MAGIC print(clf_svc.best_estimator_.degree)
+# MAGIC print(clf_svc.best_estimator_.gamma)
+
+# COMMAND ----------
+
+roc_svc = clf_eval(clf_svc, X_test, y_test)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 5.2 - [k-Nearest Neighbors](https://scikit-learn.org/stable/modules/neighbors.html)  
 # MAGIC 
 # MAGIC k-nearest neighbors algorithm (k-NN) is a non-parametric method used for classification and regression. In both cases, the input consists of the k closest training examples in the feature space. The output depends on whether k-NN is used for classification or regression:
 # MAGIC 
@@ -1064,7 +1104,7 @@ plt.show()
 # MAGIC 
 # MAGIC EuclideanDistance(x, xi) = sqrt( sum( (xj — xij)² ) )
 # MAGIC 
-# MAGIC ![knn](../Images/knn.jpeg)
+# MAGIC ![knn](https://miro.medium.com/max/1400/1*T8Pnw0kiVbrPGnqnB2I_Zw.jpeg)
 
 # COMMAND ----------
 
@@ -1086,7 +1126,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### [Decision Trees](http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html)  
+# MAGIC ## 5.3 - [Decision Trees](http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html)  
 # MAGIC 
 # MAGIC Decision tree learning uses a decision tree (as a predictive model) to go from observations about an item (represented in the branches) to conclusions about the item's target value (represented in the leaves). Tree models where the target variable can take a discrete set of values are called classification trees; in these tree structures, leaves represent class labels and branches represent conjunctions of features that lead to those class labels. Decision trees where the target variable can take continuous values (typically real numbers) are called regression trees.
 # MAGIC 
@@ -1094,7 +1134,7 @@ plt.show()
 # MAGIC 
 # MAGIC + A Gini score gives an idea of how good a split is by how mixed the response classes are in the groups created by the split.
 # MAGIC 
-# MAGIC ![dtree](../Images/dtrees.jpeg)
+# MAGIC ![dtree](https://elf11.github.io/images/decisionTree.png)
 
 # COMMAND ----------
 
@@ -1118,20 +1158,19 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Ensemble Classifiers
+# MAGIC ## 5.4 - Ensemble Classifiers
 # MAGIC 
 # MAGIC A linear classifier achieves this by making a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a feature vector. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
 # MAGIC 
 # MAGIC We have many type of ensembles: 
 # MAGIC + Bagging
 # MAGIC + Boosting 
-# MAGIC + Voting 
-# MAGIC + Stacking  
+# MAGIC + Voting & Stacking
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Bagging
+# MAGIC ### 5.4.1 - Bagging
 # MAGIC 
 # MAGIC http://scikit-learn.org/stable/modules/ensemble.html
 # MAGIC 
@@ -1140,7 +1179,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Random Forests](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)  
+# MAGIC #### 5.4.1.1 -  [Random Forests](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)  
 # MAGIC 
 # MAGIC http://blog.yhathq.com/posts/random-forests-in-python.html  
 # MAGIC http://www.analyticsvidhya.com/blog/2015/06/tuning-random-forest-model/  
@@ -1183,7 +1222,7 @@ plt.show()
 
 # COMMAND ----------
 
-features = df_train2.iloc[:,2:].columns
+features = X_train.columns
 importances = clf_rf.feature_importances_
 indices = np.argsort(importances) #[0:9])  # top 10 features
 plt.figure(figsize=(12,10))
@@ -1196,22 +1235,22 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Plotting the confidence intervals](https://github.com/scikit-learn-contrib/forest-confidence-interval)
+# MAGIC #### 5.4.1.2 -  [Bagging Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingClassifier.html)   
+# MAGIC 
+# MAGIC A Bagging classifier is an ensemble meta-estimator that fits base classifiers each on random subsets of the original dataset and then aggregate their individual predictions (either by voting or by averaging) to form a final prediction. Such a meta-estimator can typically be used as a way to reduce the variance of a black-box estimator (e.g., a decision tree), by introducing randomization into its construction procedure and then making an ensemble out of it.
 
 # COMMAND ----------
 
 # MAGIC %%time
 # MAGIC 
 # MAGIC from sklearn.ensemble import BaggingClassifier
-# MAGIC 
-# MAGIC clf_bgc = BaggingClassifier().fit(X_train, y_train)
-# MAGIC 
+# MAGIC clf_bgc = BaggingClassifier(clf_lr).fit(X_train, y_train)   ## Using the previously fitted Logistic Regression
 # MAGIC roc_bgc = clf_eval(clf_bgc, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Extra Trees Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html)  
+# MAGIC #### 5.4.1.3 - [Extra Trees Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html)
 
 # COMMAND ----------
 
@@ -1229,12 +1268,14 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Boosting
+# MAGIC ### 5.4.2 - Boosting
 # MAGIC 
 # MAGIC Boosting is a machine learning ensemble meta-algorithm for primarily reducing bias, and also variance in supervised learning, and a family of machine learning algorithms that convert weak learners to strong ones. Boosting is based on the question posed by Kearns and Valiant (1988, 1989): Can a set of weak learners create a single strong learner? A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
-# MAGIC 
-# MAGIC 
-# MAGIC #### [AdaBoost](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 5.4.2.1 - [AdaBoost](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html)
 # MAGIC 
 # MAGIC Adaptive boost is also an ensemble algorithm that leverages bagging and boosting methods to develop an enhanced predictor.
 # MAGIC 
@@ -1258,7 +1299,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### [Gradient Boost](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html):  
+# MAGIC #### 5.4.2.2 - [Gradient Boost](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html):  
 # MAGIC 
 # MAGIC Gradient Boost is also an ensemble algorithm that uses boosting methods to develop an enhanced predictor.
 # MAGIC 
@@ -1267,14 +1308,16 @@ plt.show()
 
 # COMMAND ----------
 
-# MAGIC %%time
+from sklearn.ensemble import GradientBoostingClassifier
+
+# COMMAND ----------
+
+# MAGIC %time
 # MAGIC 
-# MAGIC from sklearn.ensemble import GradientBoostingClassifier
-# MAGIC 
-# MAGIC clf_gbc = GradientBoostingClassifier(loss='log_loss',
-# MAGIC                                      learning_rate=0.1,
-# MAGIC                                      n_estimators=200,
-# MAGIC                                      subsample=1.0, 
+# MAGIC clf_gbc = GradientBoostingClassifier(learning_rate=0.1,
+# MAGIC                                      n_estimators=100,
+# MAGIC                                      subsample=1.0,
+# MAGIC                                      criterion='friedman_mse',
 # MAGIC                                      min_samples_split=3, 
 # MAGIC                                      min_samples_leaf=1, 
 # MAGIC                                      min_weight_fraction_leaf=0.0, 
@@ -1284,22 +1327,18 @@ plt.show()
 # MAGIC                                      max_features=None, 
 # MAGIC                                      verbose=0, 
 # MAGIC                                      max_leaf_nodes=None, 
-# MAGIC                                      warm_start=False,).fit(X_train, y_train)
-# MAGIC 
-# MAGIC roc_gbc = clf_eval(clf_gbc, X_test, y_test)
+# MAGIC                                      warm_start=False,
+# MAGIC                                      validation_fraction=0.1, 
+# MAGIC                                      n_iter_no_change=None, 
+# MAGIC                                      tol=0.0001, 
+# MAGIC                                      ccp_alpha=0.0).fit(X_train, y_train)
+# MAGIC                                      
+# MAGIC roc_gbc = clf_eval(clf_gbc, X_test, y_test)                                     
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### XGBoost:
-# MAGIC 
-# MAGIC https://github.com/dmlc/xgboost/tree/master/python-package  
-# MAGIC https://xgboost.readthedocs.io/en/latest/build.html#building-on-ubuntu-debian  
-# MAGIC http://xgboost.readthedocs.io/en/latest/build.html#python-package-installation  
-# MAGIC http://xgboost.readthedocs.io/en/latest/parameter.html  
-# MAGIC https://www.analyticsvidhya.com/blog/2016/03/complete-guide-parameter-tuning-xgboost-with-codes-python/  
-# MAGIC https://www.kaggle.com/cbrogan/titanic/xgboost-example-python/run/1620  
-# MAGIC http://xgboost.readthedocs.io/en/latest//python/python_api.html#module-xgboost.sklearn  
+# MAGIC #### 5.4.2.3 - [XGBoost](https://github.com/dmlc/xgboost/tree/master/python-package)  
 # MAGIC 
 # MAGIC XGBoost is one of the most popular and widely used algorithms today because it is simply so powerful.
 # MAGIC 
@@ -1333,7 +1372,6 @@ plt.show()
 # MAGIC                                         nthread=-1,
 # MAGIC                                         scale_pos_weight=1,
 # MAGIC                                         seed=0,
-# MAGIC                                         silent=False,
 # MAGIC                                         use_label_encoder=False,
 # MAGIC                                         random_state=0).fit(X_train, y_train)
 # MAGIC 
@@ -1342,7 +1380,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Light GBM: 
+# MAGIC #### 5.4.2.4 - Light GBM: 
 # MAGIC 
 # MAGIC It is another type of boosting algorithm that has shown to be faster and sometimes more accurate than XGBoost.
 # MAGIC 
@@ -1397,13 +1435,9 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Regularized Greedy Forest
+# MAGIC #### 5.4.2.5 - [Regularized Greedy Forest](https://github.com/RGF-team/rgf)
 # MAGIC 
 # MAGIC https://www.analyticsvidhya.com/blog/2018/02/introductory-guide-regularized-greedy-forests-rgf-python/  
-# MAGIC https://github.com/fukatani/rgf_python  
-# MAGIC https://github.com/MLWave/RGF-sklearn -- another implementation  
-# MAGIC https://github.com/RGF-team/rgf_python -- another implementation  
-# MAGIC 
 # MAGIC 
 # MAGIC In Boosting algorithms, each classifier/regressor is trained on data, taking into account the previous classifiers’/regressors’ success. After each training step, the weights are redistributed. Mis-classified data increases its weights to emphasize the most difficult cases. In this way, subsequent learners will focus on them during their training. However, the boosting methods simply treat the decision tree base learner as a black box and it does not take advantage of the tree structure itself.  In a sense, boosting does a partial corrective step to the model at each iteration. In contrast, RGF performs 2 steps:
 # MAGIC 
@@ -1412,9 +1446,11 @@ plt.show()
 
 # COMMAND ----------
 
+from rgf.sklearn import RGFClassifier, FastRGFClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from rgf.sklearn import RGFClassifier, FastRGFClassifier
 # MAGIC 
 # MAGIC clf_rgf = RGFClassifier(max_leaf=100,
 # MAGIC                         algorithm="RGF_Sib",
@@ -1426,7 +1462,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### [Bayesian Classifiers](http://scikit-learn.org/stable/modules/naive_bayes.html)  
+# MAGIC ## 5.5 - [Bayesian Classifiers](http://scikit-learn.org/stable/modules/naive_bayes.html)  
 # MAGIC 
 # MAGIC http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.GaussianNB.html  
 # MAGIC http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.BernoulliNB.html  
@@ -1435,16 +1471,6 @@ plt.show()
 # MAGIC 
 # MAGIC + As the name specifies, this algorithm is entirely based on Bayes's theorem. Bayes’ theorem says we can calculate the probability of a piece of data belonging to a given class if prior knowledge is given.  
 # MAGIC + P(class|data) = (P(data|class) * P(class)) / P(data)
-
-# COMMAND ----------
-
-# MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.naive_bayes import GaussianNB
-# MAGIC 
-# MAGIC clf_gnb = GaussianNB().fit(X_train, y_train)
-# MAGIC 
-# MAGIC roc_gnb = clf_eval(clf_gnb, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1462,9 +1488,11 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Gaussian Processes
+# MAGIC ## 5.6 - Gaussian Processes
 # MAGIC 
-# MAGIC In the simple linear regression setting, we have a dependent variable y that we assume can be modeled as a function of an independent variable x, i.e. y=f(x)+ϵ (where ϵ is the irreducible error) but we assume further that the function f defines a linear relationship and so we are trying to find the parameters θ0  and θ1 which define the intercept and slope of the line respectively, i.e. y=θ0+θ1x+ϵ. Bayesian linear regression provides a probabilistic approach to this by finding a distribution over the parameters that gets updated whenever new data points are observed. The GP approach, in contrast, is a non-parametric approach, in that it finds a distribution over the possible functions f(x) that are consistent with the observed data. As with all Bayesian methods it begins with a prior distribution and updates this as data points are observed, producing the posterior distribution over functions.
+# MAGIC In the simple linear regression setting, we have a dependent variable y that we assume can be modeled as a function of an independent variable x, i.e. y=f(x)+ϵ (where ϵ is the irreducible error) but we assume further that the function f defines a linear relationship and so we are trying to find the parameters $θ_0$ and $θ_1$ which define the intercept and slope of the line respectively, i.e. $y=θ_0+θ_1x+ϵ$.
+# MAGIC + Bayesian linear regression provides a probabilistic approach to this by finding a distribution over the parameters that gets updated whenever new data points are observed. 
+# MAGIC + The GP approach, in contrast, is a non-parametric approach, in that it finds a distribution over the possible functions $f(x)$ that are consistent with the observed data. As with all Bayesian methods it begins with a prior distribution and updates this as data points are observed, producing the posterior distribution over functions.
 
 # COMMAND ----------
 
@@ -1487,80 +1515,57 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Neural Networks
+# MAGIC ## 5.7 - Neural Networks
 # MAGIC 
-# MAGIC #### Tensorflow and Keras
+# MAGIC Neural Networks take inspiration from the learning process occurring in human brains. They consists of an artificial network of functions, called parameters, which allows the computer to learn, and to fine tune itself, by analyzing new data. Each "neuron" learns the parameters of a function which produces an output, after receiving one or multiple inputs. Those outputs are then passed to the next layer of neurons, which use them as inputs of their own function, and produce further outputs. Those outputs are then passed on to the next layer of neurons, and so it continues until every layer of neurons have been considered, and the terminal neurons have received their input. Those terminal neurons then output the final result for the model.  
 
 # COMMAND ----------
 
 # MAGIC %%time
 # MAGIC 
 # MAGIC import tensorflow as tf
+# MAGIC callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 # MAGIC 
-# MAGIC X_train_kr = X_train.astype('float32') 
-# MAGIC X_test_kr = X_test.astype('float32')
-# MAGIC y_train_kr = y_train
-# MAGIC y_test_kr = y_test
-# MAGIC 
-# MAGIC print(X_train_kr.shape[0], 'train samples')
-# MAGIC print(X_test_kr.shape[0], 'test samples')
-# MAGIC 
-# MAGIC 
-# MAGIC 
-# MAGIC batch_size = int(len(X_train_kr)/25)
+# MAGIC batch_size = int(len(X_train)/25)
 # MAGIC num_classes = 2
-# MAGIC epochs = 11
+# MAGIC epochs = 30
 # MAGIC np.random.seed(0)
 # MAGIC 
 # MAGIC model = tf.keras.Sequential()
-# MAGIC model.add(tf.keras.layers.Dense(input_dim=X_train_kr.shape[1], units=100, activation='relu'))
+# MAGIC model.add(tf.keras.layers.Dense(input_dim=X_train.shape[1], units=20, activation='relu'))
 # MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=100, activation='relu'))
+# MAGIC model.add(tf.keras.layers.Dense(units=40, activation='relu'))
 # MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=100, activation='relu'))
+# MAGIC model.add(tf.keras.layers.Dense(units=20, activation='relu'))
 # MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=24, activation='relu'))
-# MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=1, activation='sigmoid')) #kernel_initializer='uniform',
+# MAGIC model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
 # MAGIC model.summary()
 # MAGIC 
-# MAGIC #opt = tf.keras.optimizers.SGD(lr=0.01, momentum=0.9)
-# MAGIC opt = tf.keras.optimizers.RMSprop(learning_rate=0.001, rho=0.9, momentum=0.01, epsilon=1e-07, centered=False, name='RMSprop')
+# MAGIC model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
 # MAGIC 
-# MAGIC 
-# MAGIC model.compile(loss='binary_crossentropy',
-# MAGIC               optimizer=opt,
-# MAGIC               metrics=['binary_accuracy'])
-# MAGIC 
-# MAGIC history = model.fit(X_train_kr, y_train_kr,
+# MAGIC history = model.fit(X_train, y_train,
 # MAGIC                     batch_size=batch_size,
 # MAGIC                     epochs=epochs,
+# MAGIC                     callbacks=[callback],
 # MAGIC                     verbose=0,
 # MAGIC                     shuffle=False,
-# MAGIC                     validation_data=(X_test_kr, y_test_kr))
+# MAGIC                     validation_data=(X_test, y_test))
 # MAGIC 
-# MAGIC score = model.evaluate(X_test_kr, y_test_kr, verbose=0)
+# MAGIC score = model.evaluate(X_test, y_test, verbose=0)
 # MAGIC print('Test loss:', score[0])
 # MAGIC print('Test accuracy:', score[1])
 # MAGIC 
-# MAGIC #WARNING:tensorflow:From <timed exec>:50: Sequential.predict_classes (from tensorflow.python.keras.engine.sequential) is deprecated 
-# MAGIC # and will be removed after 2021-01-01. Instructions for updating:
-# MAGIC # Please use instead: `np.argmax(model.predict(x), axis=-1)`,   if your model does multi-class classification   
-# MAGIC #(e.g. if it uses a `softmax` last-layer activation).
-# MAGIC #`(model.predict(x) > 0.5).astype("int32")`, if your model does binary classification (e.g. if it uses a `sigmoid` last-layer activation).
+# MAGIC y_pred = (model.predict(X_test) > 0.5).astype("int32")
 # MAGIC 
-# MAGIC #y_pred = model.predict_classes(X_test_kr) 
-# MAGIC y_pred = (model.predict(X_test_kr) > 0.5).astype("int32")
-# MAGIC 
-# MAGIC clf_matrix = confusion_matrix(y_test_kr, y_pred)
+# MAGIC clf_matrix = confusion_matrix(y_test, y_pred)
 # MAGIC print('Classification Report')
-# MAGIC print(classification_report(y_test_kr, y_pred, target_names=['Perished', 'Survived']))
-# MAGIC print('ROC Score: {}'.format(roc_auc_score(y_test_kr, y_pred)))
-# MAGIC print('Accuracy Score: {}'.format(accuracy_score(y_test_kr, y_pred)))
-# MAGIC print('Average Precision Score: {}'.format(average_precision_score(y_test_kr, y_pred)))
-# MAGIC print('f1 Score: {}'.format(f1_score(y_test_kr, y_pred)))
+# MAGIC print(classification_report(y_test, y_pred, target_names=['Perished', 'Survived']))
+# MAGIC print('ROC Score: {}'.format(roc_auc_score(y_test, y_pred)))
+# MAGIC print('Accuracy Score: {}'.format(accuracy_score(y_test, y_pred)))
+# MAGIC print('Average Precision Score: {}'.format(average_precision_score(y_test, y_pred)))
+# MAGIC print('f1 Score: {}'.format(f1_score(y_test, y_pred)))
 # MAGIC plot_confusion_matrix(clf_matrix, classes=['Perished', 'Survived'])
-# MAGIC roc_keras = roc_auc_score(y_test_kr, y_pred)
+# MAGIC roc_keras = roc_auc_score(y_test, y_pred)
 
 # COMMAND ----------
 
@@ -1594,16 +1599,22 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Genetic Algorithms / AutoML
+# MAGIC ## 5.8 - AutoML / Genetic Algorithms
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 5.8.1 - [TPOT](https://github.com/rhiever/tpot)  
 # MAGIC 
-# MAGIC https://github.com/rhiever/tpot  
-# MAGIC https://github.com/rhiever/tpot/blob/master/tutorials/Titanic_Kaggle.ipynb
+# MAGIC TPOT is a Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
+
+# COMMAND ----------
+
+from tpot import TPOTClassifier
 
 # COMMAND ----------
 
 # MAGIC %%time
-# MAGIC 
-# MAGIC from tpot import TPOTClassifier
 # MAGIC 
 # MAGIC clf_tpot = TPOTClassifier(verbosity=1, 
 # MAGIC                           max_time_mins=60, 
@@ -1614,29 +1625,41 @@ plt.show()
 # MAGIC 
 # MAGIC clf_tpot.fit(X_train, y_train)
 # MAGIC roc_tpot = clf_eval(clf_tpot, X_test, y_test)
-# MAGIC 
-# MAGIC #clf_tpot.export('tpot_exported_pipeline.py')
-
-# COMMAND ----------
-
-# %load tpot_exported_pipeline.py
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### [Voting / Stacking](http://scikit-learn.org/stable/modules/ensemble.html#votingclassifier)  
+# MAGIC ### 5.8.2 - [PyCaret](https://pycaret.gitbook.io/docs/)  
 # MAGIC 
-# MAGIC [article](https://medium.com/@satyam-kumar/use-voting-classifier-to-improve-the-performance-of-your-ml-model-805345f9de0e)  
+# MAGIC https://pycaret.gitbook.io/docs/get-started/quickstart  
+# MAGIC PyCaret is an open-source, low-code machine learning library in Python that automates machine learning workflows.  
+# MAGIC It is an end-to-end machine learning and model management tool that exponentially speeds up the experiment cycle and makes you more productive.
+
+# COMMAND ----------
+
+#from pycaret.classification import *
+#s = setup(pd.concat([X_train, y_train], axis=1), target="Survived")
+
+#best = compare_models()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 5.4.3 - [Voting / Stacking](http://scikit-learn.org/stable/modules/ensemble.html#votingclassifier)  
+# MAGIC 
+# MAGIC https://medium.com/@satyam-kumar/use-voting-classifier-to-improve-the-performance-of-your-ml-model-805345f9de0e
 # MAGIC 
 # MAGIC Voting algorithms are simple strategies, where you aglomerate results of classifiers' decisions by for example taking the class which appears in most cases. 
 # MAGIC 
-# MAGIC Stacking/grading strategies are generalizations of this concept. Instead of simply saying "ok, I have a scheme v, which I will use to select the best answer among my k classifiers" you create another abstraction layer, where you actually learn to predict the correct label having k votes.  
+# MAGIC Stacking/grading strategies are generalizations of this concept. Instead of simply saying "ok, I have a scheme v, which I will use to select the best answer among my k classifiers" you create another abstraction layer, where you actually learn to predict the correct label having k votes.
+
+# COMMAND ----------
+
+from sklearn.ensemble import VotingClassifier
 
 # COMMAND ----------
 
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.ensemble import VotingClassifier 
 # MAGIC 
 # MAGIC with warnings.catch_warnings():
 # MAGIC     warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -1651,7 +1674,6 @@ plt.show()
 # MAGIC                                             ('clf_rf', clf_rf),
 # MAGIC                                             ('clf_knn', clf_knn),
 # MAGIC                                             ('clf_rgf', clf_rgf),
-# MAGIC                                             #('clf_autoskl', clf_autoskl),
 # MAGIC                                             #('clf_tpot', clf_tpot),
 # MAGIC                                             ],
 # MAGIC                                 voting='hard',
@@ -1662,11 +1684,11 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Plotting the results:  
+# MAGIC # 6 - Evaluating the results:
 
 # COMMAND ----------
 
-dic_results = {'SVM': roc_svc2,
+dic_results = {'SVM': roc_svc,
                'RandomForest': roc_rf,
                'DecisionTree': roc_dtc,
                'ExtraTree': roc_etc,
@@ -1678,7 +1700,6 @@ dic_results = {'SVM': roc_svc2,
                'Perceptron': roc_pcp,
                'PassAgre': roc_pac,
                'LogiReg': roc_lr,
-               'GaussianNB': roc_gnb,
                'BernouNB': roc_bnb,
                'RGF': roc_rgf,
                'XGBoost':roc_xgb,
@@ -1688,7 +1709,6 @@ dic_results = {'SVM': roc_svc2,
                'Voting': roc_ens,
                'Tpot': roc_tpot,
                'RGF': roc_rgf,
-               #'AutoSKL': roc_autoskl,
                'GaussianP': roc_gpc,
               }
 
@@ -1711,7 +1731,7 @@ for rect in rects:
             va='bottom',)
 
 ax.set_ylabel('Scores')
-ax.set_ylim(ymin=0.65,ymax = 0.85)
+ax.set_ylim(ymin=0.65,ymax = 0.88)
 ax.set_title("Classificators' performance")
 ax.set_xticks(ind + width/2.)
 ax.set_xticklabels(list(zip(*tup_results))[0], rotation=45)
@@ -1720,13 +1740,14 @@ plt.show()
 
 # COMMAND ----------
 
-features = df_train2.iloc[:,2:].columns
+features = X_train.columns
 df_fi = pd.DataFrame({'clf_lr': (abs(clf_lr.coef_[0])/sum(abs(clf_lr.coef_[0]))),    #a sort of adaptation
                       'clf_rf':clf_rf.feature_importances_,
                       'clf_xgb':clf_xgb.feature_importances_,
                       'clf_etc':clf_etc.feature_importances_,
                       'clf_abc':clf_abc.feature_importances_,
-                      'clf_bgc':clf_bgc.estimators_[0].feature_importances_,
+                      #'clf_bgc':clf_bgc.estimators_[0].feature_importances_,
+                      'clf_bgc':(abs(clf_lr.coef_[0])/sum(abs(clf_lr.coef_[0]))),
                       'clf_gbc':clf_gbc.feature_importances_,
                       'clf_lgb':clf_lgb.feature_importances_ / sum(clf_lgb.feature_importances_),
                      },
@@ -1738,26 +1759,65 @@ df_fi
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Choosing the best classifier and training with all training data:
+# MAGIC ## 6.1 - Optimizing the best Model
 
 # COMMAND ----------
 
-output = clf_rgf.predict(X_test)
-print(output[10:20])
-print()
+# MAGIC %%time
+# MAGIC 
+# MAGIC opt_model = RandomForestClassifier(min_weight_fraction_leaf=0.0, 
+# MAGIC                                    max_features='sqrt', 
+# MAGIC                                    max_leaf_nodes=None, 
+# MAGIC                                    bootstrap=True, 
+# MAGIC                                    oob_score=False, 
+# MAGIC                                    n_jobs=-1, 
+# MAGIC                                    random_state=0, 
+# MAGIC                                    verbose=0, 
+# MAGIC                                    warm_start=False, 
+# MAGIC                                    class_weight=None)
+# MAGIC 
+# MAGIC 
+# MAGIC n_estimators = [50, 100, 150]
+# MAGIC max_depth = [None, 5, 10, 20]
+# MAGIC min_samples_split = [2,3]
+# MAGIC min_samples_leaf = [3,4,5]
+# MAGIC criterion=['gini', 'entropy', 'log_loss']
+# MAGIC param_grid=dict(n_estimators=n_estimators, 
+# MAGIC                 max_depth=max_depth, 
+# MAGIC                 min_samples_split=min_samples_split, 
+# MAGIC                 min_samples_leaf=min_samples_leaf,
+# MAGIC                 criterion=criterion)
+# MAGIC 
+# MAGIC 
+# MAGIC 
+# MAGIC clf_rfo = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
+# MAGIC #clf_rfo = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
+# MAGIC                                        estimator=opt_model,
+# MAGIC                                        cv=cv,                                       ## using cross validation
+# MAGIC                                        n_jobs=-1)
+# MAGIC 
+# MAGIC clf_rfo.fit(X_train, y_train)
+# MAGIC 
+# MAGIC print(clf_rfo.best_score_)
+# MAGIC print(clf_rfo.best_estimator_.n_estimators)
+# MAGIC print(clf_rfo.best_estimator_.max_depth)
+# MAGIC print(clf_rfo.best_estimator_.min_samples_split)
+# MAGIC print(clf_rfo.best_estimator_.min_samples_leaf)
+# MAGIC print(clf_rfo.best_estimator_.criterion)
 
-output_prob = clf_rgf.predict_proba(X_test)
-print(output_prob[10:20])
+# COMMAND ----------
+
+roc_rfo = clf_eval(clf_rfo, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Examining the ROC Curve
+# MAGIC ## 6.2 - Examining the ROC Curve
 
 # COMMAND ----------
 
 # calculate the fpr and tpr for all thresholds of the classification
-probs = clf_rgf.predict_proba(X_train)
+probs = clf_rfo.predict_proba(X_train)
 y_hat = probs[:,1]
 fpr, tpr, threshold = roc_curve(y_train, y_hat)
 roc_auc = auc(fpr, tpr)
@@ -1772,3 +1832,79 @@ plt.ylim([0, 1])
 plt.ylabel('True Positive Rate')
 plt.xlabel('False Positive Rate')
 plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 6.2 - Displaying the [learning curve](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html)  
+# MAGIC A cross-validation generator splits the whole dataset k times in training and test data. Subsets of the training set with varying sizes will be used to train the estimator and a score for each training subset size and the test set will be computed. Afterwards, the scores will be averaged over all k runs for each training subset size.
+
+# COMMAND ----------
+
+def plot_learning_curve(estimator, 
+                        title, 
+                        X, 
+                        y, 
+                        ylim=None, 
+                        cv=None,
+                        n_jobs=-1, 
+                        train_sizes=np.linspace(.1, 1.0, 5)):
+    
+    plt.figure(figsize=(16,8))
+    plt.title(title)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel("Training examples")
+    plt.ylabel("Score")
+    train_sizes, train_scores, test_scores = model_selection.learning_curve(estimator,
+                                                                            X, 
+                                                                            y, 
+                                                                            cv=cv,
+                                                                            n_jobs=n_jobs,
+                                                                            train_sizes=train_sizes)
+    
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    
+    plt.grid()
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, 
+                     alpha=0.1, 
+                     color="r")
+    
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, 
+                     alpha=0.1, 
+                     color="g")
+    
+    plt.plot(train_sizes, 
+             train_scores_mean, 
+             'o-', 
+             color="r", 
+             label="Training score")
+    
+    plt.plot(train_sizes, 
+             test_scores_mean, 
+             'o-', 
+             color="g", label="Cross-validation score")
+
+    plt.legend(loc="best")
+    return plt
+
+# COMMAND ----------
+
+# MAGIC %%time
+# MAGIC title = f'''Learning Curves (Random Forest, 
+# MAGIC Estimators:{clf_rfo.best_estimator_.n_estimators},
+# MAGIC Max Depth:{clf_rfo.best_estimator_.max_depth},
+# MAGIC Min Samples Split:{clf_rfo.best_estimator_.min_samples_split},
+# MAGIC Min Samples Leaf:{clf_rfo.best_estimator_.min_samples_leaf},
+# MAGIC Criterion:{clf_rfo.best_estimator_.criterion})'''
+# MAGIC graph = plot_learning_curve(clf_rfo, title, X_train, y_train, cv=cv)
+# MAGIC graph.show()
+
+# COMMAND ----------
+
+
