@@ -81,9 +81,10 @@
 #!pip install -U -q  xgboost 
 #!pip install -U -q  lightgbm 
 !pip install -U -q  rgf_python 
+#!pip install -U -q catboost
 #!pip install -U -q  forestci
 !pip install -U -q  tpot 
-# pip install -U -q pycaret
+#!pip install -U -q pycaret
 #!pip install -U -q  tensorflow tensorboard 
 #!pip install -U -q  torch torchvision 
 #!pip install -U -q  delayed
@@ -678,13 +679,14 @@ from sklearn.model_selection import GridSearchCV
 
 # MAGIC %md
 # MAGIC ## 4.2 - Creating Cross validation folds   
-# MAGIC This will make more precise the evaluation of the classfiers when doing grid search  
-# MAGIC #https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection
+# MAGIC This will make more precise the evaluation of the classifiers when doing grid search.  
+# MAGIC Bear in mind that this also affects the sample used for training, making the performance slighty worse than when using the whole dataset
+# MAGIC #https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection 
 
 # COMMAND ----------
 
-#cv = model_selection.StratifiedKFold(n_splits=5)
-cv = model_selection.KFold(n_splits=5)
+#cv = model_selection.StratifiedKFold(n_splits=10)
+cv = model_selection.KFold(n_splits=10)
 
 # COMMAND ----------
 
@@ -787,9 +789,11 @@ def clf_eval(clf, X, y_true, classes=['Perished', 'Survived']):
 
 # COMMAND ----------
 
+from sklearn.linear_model import LogisticRegression
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-# MAGIC from sklearn.linear_model import LogisticRegression
 # MAGIC 
 # MAGIC clf_lr = LogisticRegression(penalty='l2',
 # MAGIC                             dual=False, 
@@ -924,9 +928,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.linear_model import RidgeClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.linear_model import RidgeClassifier
 # MAGIC 
 # MAGIC clf_rdg = RidgeClassifier(alpha=1.0, 
 # MAGIC                           fit_intercept=True, 
@@ -949,9 +955,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.linear_model import Perceptron
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.linear_model import Perceptron
 # MAGIC 
 # MAGIC clf_pcp = Perceptron(penalty=None,
 # MAGIC                      alpha=0.001,
@@ -980,9 +988,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.linear_model import PassiveAggressiveClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.linear_model import PassiveAggressiveClassifier
 # MAGIC 
 # MAGIC clf_pac = PassiveAggressiveClassifier(C=0.1, 
 # MAGIC                                       fit_intercept=True, 
@@ -1008,9 +1018,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.linear_model import SGDClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.linear_model import SGDClassifier
 # MAGIC 
 # MAGIC clf_sgdc = SGDClassifier(loss='hinge',
 # MAGIC                          penalty='l2', 
@@ -1056,9 +1068,12 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn import svm
+
+# COMMAND ----------
+
 # MAGIC %%time
 # MAGIC 
-# MAGIC from sklearn import svm
 # MAGIC estimator = svm.SVC()
 # MAGIC 
 # MAGIC kernels = ['linear', 'poly', 'rbf', 'sigmoid']
@@ -1108,9 +1123,11 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 
 # COMMAND ----------
 
+from sklearn.neighbors import KNeighborsClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.neighbors import KNeighborsClassifier
 # MAGIC 
 # MAGIC clf_knn = KNeighborsClassifier(n_neighbors=25,
 # MAGIC                                weights='uniform', 
@@ -1138,9 +1155,11 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 
 # COMMAND ----------
 
+from sklearn.tree import DecisionTreeClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.tree import DecisionTreeClassifier
 # MAGIC 
 # MAGIC clf_dtc = DecisionTreeClassifier(criterion='gini', 
 # MAGIC                                  splitter='best', 
@@ -1158,7 +1177,7 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 5.4 - Ensemble Classifiers
+# MAGIC ## 5.4 - [Ensemble Classifiers](http://scikit-learn.org/stable/modules/ensemble.html)
 # MAGIC 
 # MAGIC A linear classifier achieves this by making a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a feature vector. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
 # MAGIC 
@@ -1171,8 +1190,6 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 
 # MAGIC %md
 # MAGIC ### 5.4.1 - Bagging
-# MAGIC 
-# MAGIC http://scikit-learn.org/stable/modules/ensemble.html
 # MAGIC 
 # MAGIC Bootstrap aggregating, also called bagging, is a machine learning ensemble meta-algorithm designed to improve the stability and accuracy of machine learning algorithms used in statistical classification and regression. It also reduces variance and helps to avoid overfitting. Although it is usually applied to decision tree methods, it can be used with any type of method. Bagging is a special case of the model averaging approach. Random Forests are the most common type of bagging algorithms.
 
@@ -1191,9 +1208,11 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 
 # COMMAND ----------
 
+from sklearn.ensemble import RandomForestClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.ensemble import RandomForestClassifier
 # MAGIC 
 # MAGIC clf_rf = RandomForestClassifier(n_estimators=300, 
 # MAGIC                                 criterion='gini', 
@@ -1241,9 +1260,12 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.ensemble import BaggingClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
 # MAGIC 
-# MAGIC from sklearn.ensemble import BaggingClassifier
 # MAGIC clf_bgc = BaggingClassifier(clf_lr).fit(X_train, y_train)   ## Using the previously fitted Logistic Regression
 # MAGIC roc_bgc = clf_eval(clf_bgc, X_test, y_test)
 
@@ -1254,9 +1276,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.ensemble import ExtraTreesClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.ensemble import ExtraTreesClassifier
 # MAGIC 
 # MAGIC clf_etc = ExtraTreesClassifier(n_estimators=300,
 # MAGIC                                max_depth=None,
@@ -1284,9 +1308,11 @@ plt.show()
 
 # COMMAND ----------
 
+from sklearn.ensemble import AdaBoostClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.ensemble import AdaBoostClassifier
 # MAGIC 
 # MAGIC clf_abc = AdaBoostClassifier(base_estimator=None,
 # MAGIC                              n_estimators=300,
@@ -1348,9 +1374,11 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 # COMMAND ----------
 
+import xgboost
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC import xgboost
 # MAGIC 
 # MAGIC clf_xgb = xgboost.sklearn.XGBClassifier(base_score=0.5,
 # MAGIC                                         learning_rate=0.1,
@@ -1388,9 +1416,11 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 # COMMAND ----------
 
+import lightgbm as lgb
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC import lightgbm as lgb
 # MAGIC 
 # MAGIC params = {'boosting_type': 'gbdt',
 # MAGIC           'max_depth' : -1,
@@ -1435,7 +1465,29 @@ from sklearn.ensemble import GradientBoostingClassifier
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### 5.4.2.5 - [Regularized Greedy Forest](https://github.com/RGF-team/rgf)
+# MAGIC #### 5.4.2.5 - [Catboost](https://catboost.ai/)  
+# MAGIC 
+# MAGIC TBD - There is a problem running inside Databricks environment
+
+# COMMAND ----------
+
+#from catboost import CatBoostClassifier
+
+# COMMAND ----------
+
+#tmp_path = '/dbfs/tmp'
+#
+#clf_ctb = CatBoostClassifier(iterations=2,
+#                             learning_rate=1,
+#                             depth=2,
+#                             train_dir=tmp_path)
+#clf_ctb.fit(X_train, y_train, verbose=False)
+#roc_ctb = clf_eval(clf_ctb, X_test, y_test)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 5.4.2.6 - [Regularized Greedy Forest](https://github.com/RGF-team/rgf)
 # MAGIC 
 # MAGIC https://www.analyticsvidhya.com/blog/2018/02/introductory-guide-regularized-greedy-forests-rgf-python/  
 # MAGIC 
@@ -1474,9 +1526,11 @@ from rgf.sklearn import RGFClassifier, FastRGFClassifier
 
 # COMMAND ----------
 
+from sklearn.naive_bayes import BernoulliNB
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.naive_bayes import BernoulliNB
 # MAGIC 
 # MAGIC clf_bnb = BernoulliNB(alpha=0.20, 
 # MAGIC                      binarize=0.0, 
@@ -1496,9 +1550,11 @@ from rgf.sklearn import RGFClassifier, FastRGFClassifier
 
 # COMMAND ----------
 
+from sklearn.gaussian_process import GaussianProcessClassifier
+
+# COMMAND ----------
+
 # MAGIC %%time
-# MAGIC 
-# MAGIC from sklearn.gaussian_process import GaussianProcessClassifier
 # MAGIC 
 # MAGIC clf_gpc = GaussianProcessClassifier(kernel=None, 
 # MAGIC                                     optimizer='fmin_l_bfgs_b', 
@@ -1521,9 +1577,12 @@ from rgf.sklearn import RGFClassifier, FastRGFClassifier
 
 # COMMAND ----------
 
+import tensorflow as tf
+
+# COMMAND ----------
+
 # MAGIC %%time
 # MAGIC 
-# MAGIC import tensorflow as tf
 # MAGIC callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 # MAGIC 
 # MAGIC batch_size = int(len(X_train)/25)
@@ -1747,7 +1806,7 @@ df_fi = pd.DataFrame({'clf_lr': (abs(clf_lr.coef_[0])/sum(abs(clf_lr.coef_[0])))
                       'clf_etc':clf_etc.feature_importances_,
                       'clf_abc':clf_abc.feature_importances_,
                       #'clf_bgc':clf_bgc.estimators_[0].feature_importances_,
-                      'clf_bgc':(abs(clf_lr.coef_[0])/sum(abs(clf_lr.coef_[0]))),
+                      'clf_bgc':(abs(clf_lr.coef_[0])/sum(abs(clf_lr.coef_[0]))),   # Adapting because we are using linear regression classifiers in our bagging strategy
                       'clf_gbc':clf_gbc.feature_importances_,
                       'clf_lgb':clf_lgb.feature_importances_ / sum(clf_lgb.feature_importances_),
                      },
@@ -1777,10 +1836,10 @@ df_fi
 # MAGIC                                    class_weight=None)
 # MAGIC 
 # MAGIC 
-# MAGIC n_estimators = [50, 100, 150]
-# MAGIC max_depth = [None, 5, 10, 20]
-# MAGIC min_samples_split = [2,3]
-# MAGIC min_samples_leaf = [3,4,5]
+# MAGIC n_estimators = [100, 150, 200]
+# MAGIC max_depth = [5, 10, None]
+# MAGIC min_samples_split = [1,2,3]
+# MAGIC min_samples_leaf = [2,3,4]
 # MAGIC criterion=['gini', 'entropy', 'log_loss']
 # MAGIC param_grid=dict(n_estimators=n_estimators, 
 # MAGIC                 max_depth=max_depth, 
@@ -1904,7 +1963,3 @@ def plot_learning_curve(estimator,
 # MAGIC Criterion:{clf_rfo.best_estimator_.criterion})'''
 # MAGIC graph = plot_learning_curve(clf_rfo, title, X_train, y_train, cv=cv)
 # MAGIC graph.show()
-
-# COMMAND ----------
-
-
