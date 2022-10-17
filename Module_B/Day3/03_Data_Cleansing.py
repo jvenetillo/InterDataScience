@@ -13,15 +13,50 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Setting the default database and user name  
+# MAGIC ##### Substitute "renato" by your name in the `username` variable.
+
+# COMMAND ----------
+
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC By default Spark on Databricks works with files on DBFS, until you're explicitly changing the schema.  
+# MAGIC But if you want to read a file using **spark.read** function in databricks you can use the prefix **file:** followed by the complete path to the file.   
+# MAGIC https://spark.apache.org/docs/2.1.0/api/python/pyspark.sql.html#pyspark.sql.DataFrameReader
+
+# COMMAND ----------
+
+import os
+
+# COMMAND ----------
+
+datapath = os.path.join(os.getcwd(), "data", "airbnb", "listings.csv.gz")
+datapath = "file://" + datapath
+print(datapath)
+
+#filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06.csv"
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC Let's load the Airbnb dataset in.
 
 # COMMAND ----------
 
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06.csv"
-
-rawDF = spark.read.csv(filePath, header="true", inferSchema="true", multiLine="true", escape='"')
-
-display(rawDF)
+rawDF = spark.read.csv(datapath, header="true", inferSchema="true", multiLine="true", escape='"')
+rawDF.limit(10).display()
 
 # COMMAND ----------
 
@@ -36,7 +71,7 @@ rawDF.columns
 
 columnsToKeep = [
   "host_is_superhost",
-  "cancellation_policy",
+  #"cancellation_policy",
   "instant_bookable",
   "host_total_listings_count",
   "neighbourhood_cleansed",
@@ -45,10 +80,10 @@ columnsToKeep = [
   "property_type",
   "room_type",
   "accommodates",
-  "bathrooms",
+  #"bathrooms",
   "bedrooms",
   "beds",
-  "bed_type",
+  #"bed_type",
   "minimum_nights",
   "number_of_reviews",
   "review_scores_rating",
@@ -62,14 +97,15 @@ columnsToKeep = [
 
 baseDF = rawDF.select(columnsToKeep)
 baseDF.cache().count()
-display(baseDF)
+baseDF.limit(10).display()
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### Fixing Data Types
 # MAGIC 
-# MAGIC Take a look at the schema above. You'll notice that the `price` field got picked up as string. For our task, we need it to be a numeric (double type) field. 
+# MAGIC Take a look at the schema above. You'll notice that the `price` field got picked up as string.  
+# MAGIC For our task, we need it to be a numeric (double type) field. 
 # MAGIC 
 # MAGIC Let's fix that.
 
@@ -79,7 +115,7 @@ from pyspark.sql.functions import col, translate
 
 fixedPriceDF = baseDF.withColumn("price", translate(col("price"), "$,", "").cast("double"))
 
-display(fixedPriceDF)
+fixedPriceDF.limit(10).display()
 
 # COMMAND ----------
 
@@ -210,7 +246,7 @@ from pyspark.sql.functions import when
 
 imputeCols = [
   "bedrooms",
-  "bathrooms",
+  #"bathrooms",
   "beds", 
   "review_scores_rating",
   "review_scores_accuracy",
@@ -227,6 +263,10 @@ for c in imputeCols:
 # COMMAND ----------
 
 display(doublesDF.describe())
+
+# COMMAND ----------
+
+doublesDF.limit(10).display()
 
 # COMMAND ----------
 
@@ -249,37 +289,37 @@ imputedDF = imputerModel.transform(doublesDF)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC OK, our data is cleansed now. Let's save this DataFrame to Delta so that we can start building models with it.
-
-# COMMAND ----------
-
-outputPath = userhome + "/machine-learning-p/airbnb-cleansed.delta"
-
-imputedDF.write.format("delta").mode("overwrite").save(outputPath)
+imputedDF.limit(10).display()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## What's needed for the lab
-# MAGIC * [Train-test split](https://en.wikipedia.org/wiki/Training,_validation,_and_test_sets)
-# MAGIC * [RMSE](https://en.wikipedia.org/wiki/Root-mean-square_deviation)
+# MAGIC OK, our data is cleansed now. Let's save this DataFrame to a Database so that we can start building models with it.
+# MAGIC Delta 
+
+# COMMAND ----------
+
+deltaPath = os.path.join("/", "tmp", username)    #If we were writing to the root folder and not to the DBFS
+if not os.path.exists(deltaPath):
+    os.mkdir(deltaPath)
+    
+print(deltaPath)
+
+# COMMAND ----------
+
+# Converting Spark DataFrame to Delta Table
+dbutils.fs.rm(deltaPath, True)
+imputedDF.write.format("delta").mode("overwrite").save(deltaPath)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ![](https://files.training.databricks.com/images/301/TrainTestSplit.png)
+# MAGIC ### We are going to use this database in the next notebooks!
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ![](https://files.training.databricks.com/images/301/rmse.png)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC -sandbox
-# MAGIC &copy; 2020 Databricks, Inc. All rights reserved.<br/>
+# MAGIC Code modified and enhanced from 2020 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
 # MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="http://help.databricks.com/">Support</a>

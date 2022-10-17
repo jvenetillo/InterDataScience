@@ -15,6 +15,19 @@
 
 # COMMAND ----------
 
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Spark DataFrame
 
@@ -33,7 +46,8 @@ df = (spark.range(1, 1000000)
 
 # COMMAND ----------
 
-display(df.sample(.001))
+#display(df.sample(.001))
+df.sample(.001).limit(10).display()
 
 # COMMAND ----------
 
@@ -156,25 +170,6 @@ DFjson.count()
 # COMMAND ----------
 
 df.limit(10).toPandas()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## What's new in [Spark 3.0](https://www.youtube.com/watch?v=l6SuXvhorDY&feature=emb_logo)
-# MAGIC * [Adaptive Query Execution](https://www.youtube.com/watch?v=jzrEc4r90N8&feature=emb_logo)
-# MAGIC   * Dynamic query optimization that happens in the middle of your query based on runtime statistics
-# MAGIC     * Dynamically coalesce shuffle partitions
-# MAGIC     * Dynamically switch join strategies
-# MAGIC     * Dynamically optimize skew joins
-# MAGIC   * Enable it with: `spark.sql.adaptive.enabled=true`
-# MAGIC * Dynamic Partition Pruning (DPP)
-# MAGIC   * Avoid partition scanning based on the query results of the other query fragments
-# MAGIC * Join Hints
-# MAGIC * [Improved Pandas UDFs](https://www.youtube.com/watch?v=UZl0pHG-2HA&feature=emb_logo)
-# MAGIC   * Type Hints
-# MAGIC   * Iterators
-# MAGIC   * Pandas Function API (mapInPandas, applyInPandas, etc)
-# MAGIC * And many more! See the [migration guide](https://spark.apache.org/docs/latest/migration-guide.html) and resources linked above.
 
 # COMMAND ----------
 

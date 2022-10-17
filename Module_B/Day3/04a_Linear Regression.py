@@ -10,8 +10,40 @@
 
 # COMMAND ----------
 
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06-clean.delta/"
-airbnbDF = spark.read.format("delta").load(filePath)
+import os
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Setting the default database and user name  
+# MAGIC ##### Substitute "renato" by your name in the `username` variable.
+
+# COMMAND ----------
+
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
+deltaPath = os.path.join("/", "tmp", username)    #If we were writing to the root folder and not to the DBFS
+if not os.path.exists(deltaPath):
+    os.mkdir(deltaPath)
+    
+print(deltaPath)
+
+airbnbDF = spark.read.format("delta").load(deltaPath)
+
+# COMMAND ----------
+
+airbnbDF.limit(10).display()
 
 # COMMAND ----------
 
@@ -68,7 +100,8 @@ display(trainDF)
 # MAGIC 
 # MAGIC We will use `LinearRegression` to build our first model [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.regression.LinearRegression)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.regression.LinearRegression).
 # MAGIC 
-# MAGIC The cell below will fail because the Linear Regression estimator expects a vector of values as input. We will fix that with VectorAssembler below.
+# MAGIC The cell below will fail because the Linear Regression estimator expects a vector of values as input. We will fix that with VectorAssembler below.  
+# MAGIC https://stackoverflow.com/questions/61056160/illegalargumentexception-column-must-be-of-type-structtypetinyint-sizeint-in
 
 # COMMAND ----------
 
@@ -77,7 +110,7 @@ from pyspark.ml.regression import LinearRegression
 lr = LinearRegression(featuresCol="bedrooms", labelCol="price")
 
 # Uncomment when running
-# lrModel = lr.fit(trainDF)
+lrModel = lr.fit(trainDF)
 
 # COMMAND ----------
 
@@ -133,7 +166,7 @@ predDF.select("bedrooms", "features", "price", "prediction").show()
 # MAGIC %md
 # MAGIC ## Evaluate Model
 # MAGIC 
-# MAGIC Let's see how our linear regression model with just one variable does. Does it beat our baseline model?
+# MAGIC Let's see how our linear regression model with just one variable does.
 
 # COMMAND ----------
 
@@ -147,13 +180,12 @@ print(f"RMSE is {rmse}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Wahoo! Our RMSE is better than our baseline model. However, it's still not that great. Let's see how we can further decrease it in future notebooks.
+# MAGIC #### It's still not that great. Let's see how we can further decrease it in the next notebook.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC -sandbox
-# MAGIC &copy; 2020 Databricks, Inc. All rights reserved.<br/>
+# MAGIC Code modified and enhanced from 2020 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
 # MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="http://help.databricks.com/">Support</a>
