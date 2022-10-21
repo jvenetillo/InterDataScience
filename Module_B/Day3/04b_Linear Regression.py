@@ -11,8 +11,75 @@
 
 # COMMAND ----------
 
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06-clean.delta/"
-airbnbDF = spark.read.format("delta").load(filePath)
+# MAGIC %md
+# MAGIC #### Importing modules and disabling MLflow  
+
+# COMMAND ----------
+
+import os
+import mlflow
+mlflow.autolog(disable=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Setting the default database and user name  
+# MAGIC ##### Substitute "renato" by your name in the `username` variable.
+
+# COMMAND ----------
+
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
+deltaPath = os.path.join("/", "tmp", username)    #If we were writing to the root folder and not to the DBFS
+if not os.path.exists(deltaPath):
+    os.mkdir(deltaPath)
+    
+print(deltaPath)
+
+airbnbDF = spark.read.format("delta").load(deltaPath)
+
+# COMMAND ----------
+
+airbnbDF.limit(10).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Checking Null Values in Spark Dataframe
+
+# COMMAND ----------
+
+for col in airbnbDF.columns:
+  print(col, ":", airbnbDF.filter(f"{col} is NULL").count())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Imputing Null Values  
+# MAGIC [Python](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrame.fillna.html)  
+
+# COMMAND ----------
+
+airbnbDF.filter("host_total_listings_count is NULL").display()
+
+# COMMAND ----------
+
+airbnbDF = airbnbDF.fillna(0)
+
+# COMMAND ----------
+
+airbnbDF.filter("host_total_listings_count is NULL").display()
 
 # COMMAND ----------
 
@@ -36,9 +103,18 @@ airbnbDF = spark.read.format("delta").load(filePath)
 # MAGIC * Generate embeddings (mainly used for textual data)
 # MAGIC 
 # MAGIC ### One Hot Encoder
-# MAGIC Here, we are going to One Hot Encode (OHE) our categorical variables. Spark doesn't have a `dummies` function, and OHE is a two step process. First, we need to use `StringIndexer` to map a string column of labels to an ML column of label indices [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.feature.StringIndexer)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.feature.StringIndexer).
+# MAGIC Here, we are going to One Hot Encode (OHE) our categorical variables.
+# MAGIC Spark doesn't have a `dummies` function, and OHE is a two step process.  
+# MAGIC First, we need to use `StringIndexer` to map a string column of labels to an ML column of label indices  
+# MAGIC [API Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.feature.StringIndexer.html)  
 # MAGIC 
-# MAGIC Then, we can apply the `OneHotEncoder` to the output of the StringIndexer [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.feature.OneHotEncoder)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.feature.OneHotEncoder).
+# MAGIC Then, we can apply the `OneHotEncoder` to the output of the StringIndexer  
+# MAGIC [API Python](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.ml.feature.OneHotEncoder.html)  
+
+# COMMAND ----------
+
+categoricalCols = [field for (field, dataType) in trainDF.dtypes if dataType == "string"]
+categoricalCols
 
 # COMMAND ----------
 
@@ -53,6 +129,10 @@ oheEncoder = OneHotEncoder(inputCols=indexOutputCols, outputCols=oheOutputCols)
 
 # COMMAND ----------
 
+numericCols = [field for (field, dataType) in trainDF.dtypes if ((dataType == "double") & (field != "price"))]
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Vector Assembler
 # MAGIC 
@@ -62,7 +142,8 @@ oheEncoder = OneHotEncoder(inputCols=indexOutputCols, outputCols=oheOutputCols)
 
 from pyspark.ml.feature import VectorAssembler
 
-numericCols = [field for (field, dataType) in trainDF.dtypes if ((dataType == "double") & (field != "price"))]
+# COMMAND ----------
+
 assemblerInputs = oheOutputCols + numericCols
 vecAssembler = VectorAssembler(inputCols=assemblerInputs, outputCol="features")
 
@@ -106,6 +187,14 @@ pipelineModel = pipeline.fit(trainDF)
 
 # COMMAND ----------
 
+userhome = os.path.join("/", "tmp", username)    #We are writing to the root folder and not to the DBFS
+if not os.path.exists(userhome):
+    os.mkdir(userhome)
+    
+print(userhome)
+
+# COMMAND ----------
+
 pipelinePath = userhome + "/machine-learning-p/lr_pipeline_model"
 pipelineModel.write().overwrite().save(pipelinePath)
 
@@ -138,9 +227,7 @@ display(predDF.select("features", "price", "prediction"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Evaluate model
-# MAGIC 
-# MAGIC ![](https://files.training.databricks.com/images/r2d2.jpg) How is our R2 doing?
+# MAGIC ## Evaluate model  
 
 # COMMAND ----------
 
@@ -161,8 +248,7 @@ print(f"R2 is {r2}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC -sandbox
-# MAGIC &copy; 2020 Databricks, Inc. All rights reserved.<br/>
+# MAGIC Code modified and enhanced from 2020 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
 # MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="http://help.databricks.com/">Support</a>

@@ -1,165 +1,147 @@
 # Databricks notebook source
+#!pip install sparkxgb
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # XGBoost
 # MAGIC 
-# MAGIC Up until this point, we have only used SparkML. Let's look a third party library for Gradient Boosted Trees. 
-# MAGIC  
-# MAGIC Ensure that you are using the [Databricks Runtime for ML](https://docs.microsoft.com/en-us/azure/databricks/runtime/mlruntime) because that has Distributed XGBoost already installed. 
-# MAGIC 
-# MAGIC **NOTE:** There is currently only a distributed version of XGBoost for Scala, not Python. We will switch to Scala for that section.
-# MAGIC 
-# MAGIC **Question**: How do gradient boosted trees differ from random forests? Which parts can be parallelized?
-# MAGIC 
-# MAGIC ## ![Spark Logo Tiny](https://files.training.databricks.com/images/105/logo_spark_tiny.png) In this lesson you:<br>
-# MAGIC  - Use 3rd party libraries (XGBoost) to further improve your model
+# MAGIC #### Using the example at: [This repo](https://github.com/sllynn/spark-xgboost/blob/master/examples/spark-xgboost_adultdataset.ipynb)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Data Preparation
-# MAGIC 
-# MAGIC Let's go ahead and index all of our categorical features, and set our label to be `log(price)`.
+# MAGIC #### Importing modules and disabling MLflow  
 
 # COMMAND ----------
 
-from pyspark.sql.functions import log, col
-from pyspark.ml.feature import StringIndexer, VectorAssembler
+from sparkxgb import XGBoostClassifier, XGBoostRegressor
+from pprint import PrettyPrinter
+
+from pyspark.sql.types import StringType
+
 from pyspark.ml import Pipeline
-
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06-clean.delta/"
-airbnbDF = spark.read.format("delta").load(filePath)
-(trainDF, testDF) = airbnbDF.withColumn("label", log(col("price"))).randomSplit([.8, .2], seed=42)
-
-categoricalCols = [field for (field, dataType) in trainDF.dtypes if dataType == "string"]
-indexOutputCols = [x + "Index" for x in categoricalCols]
-
-stringIndexer = StringIndexer(inputCols=categoricalCols, outputCols=indexOutputCols, handleInvalid="skip")
-
-numericCols = [field for (field, dataType) in trainDF.dtypes if ((dataType == "double") & (field != "price") & (field != "label"))]
-assemblerInputs = indexOutputCols + numericCols
-vecAssembler = VectorAssembler(inputCols=assemblerInputs, outputCol="features")
-pipeline = Pipeline(stages=[stringIndexer, vecAssembler])
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator, BinaryClassificationEvaluator
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+pp = PrettyPrinter()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Scala
-# MAGIC 
-# MAGIC Distributed XGBoost with Spark only has a Scala API, so we are going to create views of our DataFrames to use in Scala, as well as save our (untrained) pipeline to load in to Scala.
+col_names = [
+  "age", "workclass", "fnlwgt",
+  "education", "education-num",
+  "marital-status", "occupation",
+  "relationship", "race", "sex",
+  "capital-gain", "capital-loss",
+  "hours-per-week", "native-country",
+  "label"
+]
+
+train_sdf, test_sdf = (
+  spark.read.csv(
+    path="/databricks-datasets/adult/adult.data",
+    inferSchema=True  
+  )
+  .toDF(*col_names)
+  .repartition(200)
+  .randomSplit([0.8, 0.2])
+)
 
 # COMMAND ----------
 
-trainDF.createOrReplaceTempView("trainDF")
-testDF.createOrReplaceTempView("testDF")
-
-fileName = userhome + "/machine-learning/xgboost_feature_pipeline"
-pipeline.write().overwrite().save(fileName)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Load Data/Pipeline in Scala
-# MAGIC 
-# MAGIC This section is only available in Scala because there is no distributed Python API for XGBoost in Spark yet.
-# MAGIC 
-# MAGIC Let's load in our data/pipeline that we defined in Python.
+string_columns = [fld.name for fld in train_sdf.schema.fields if isinstance(fld.dataType, StringType)]
+string_col_replacements = [fld + "_ix" for fld in string_columns]
+string_column_map=list(zip(string_columns, string_col_replacements))
+target = string_col_replacements[-1]
+predictors = [fld.name for fld in train_sdf.schema.fields if not isinstance(fld.dataType, StringType)] + string_col_replacements[:-1]
+pp.pprint(
+  dict(
+    string_column_map=string_column_map,
+    target_variable=target,
+    predictor_variables=predictors
+  )
+)
 
 # COMMAND ----------
 
-# MAGIC %scala
-# MAGIC import org.apache.spark.ml.Pipeline
-# MAGIC 
-# MAGIC val fileName = userhome + "/machine-learning/xgboost_feature_pipeline"
-# MAGIC val pipeline = Pipeline.load(fileName)
-# MAGIC 
-# MAGIC val trainDF = spark.table("trainDF")
-# MAGIC val testDF = spark.table("testDF")
+si = [StringIndexer(inputCol=fld[0], outputCol=fld[1]) for fld in string_column_map]
+va = VectorAssembler(inputCols=predictors, outputCol="features")
+pipeline = Pipeline(stages=[*si, va])
+fitted_pipeline = pipeline.fit(train_sdf.union(test_sdf))
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## XGBoost
-# MAGIC 
-# MAGIC Now we are ready to train our XGBoost model!
+train_sdf_prepared = fitted_pipeline.transform(train_sdf)
+train_sdf_prepared.cache()
+train_sdf_prepared.count()
 
 # COMMAND ----------
 
-# MAGIC %scala
-# MAGIC 
-# MAGIC import ml.dmlc.xgboost4j.scala.spark._
-# MAGIC import org.apache.spark.sql.functions._
-# MAGIC 
-# MAGIC val paramMap = List("num_round" -> 100, "eta" -> 0.1, "max_leaf_nodes" -> 50, "seed" -> 42, "missing" -> 0).toMap
-# MAGIC 
-# MAGIC val xgboostEstimator = new XGBoostRegressor(paramMap)
-# MAGIC 
-# MAGIC val xgboostPipeline = new Pipeline().setStages(pipeline.getStages ++ Array(xgboostEstimator))
-# MAGIC 
-# MAGIC val xgboostPipelineModel = xgboostPipeline.fit(trainDF)
-# MAGIC val xgboostLogPredictedDF = xgboostPipelineModel.transform(testDF)
-# MAGIC 
-# MAGIC val expXgboostDF = xgboostLogPredictedDF.withColumn("prediction", exp(col("prediction")))
-# MAGIC expXgboostDF.createOrReplaceTempView("expXgboostDF")
+test_sdf_prepared = fitted_pipeline.transform(test_sdf)
+test_sdf_prepared.cache()
+test_sdf_prepared.count()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Evaluate
-# MAGIC 
-# MAGIC Now we can evaluate how well our XGBoost model performed.
+xgbParams = dict(
+  eta=0.1,
+  maxDepth=2,
+  missing=0.0,
+  objective="binary:logistic",
+  numRound=5,
+  numWorkers=2
+)
+
+xgb = (
+  XGBoostClassifier(**xgbParams)
+  .setFeaturesCol("features")
+  .setLabelCol("label_ix")
+)
+
+bce = BinaryClassificationEvaluator(
+  rawPredictionCol="rawPrediction",
+  labelCol="label_ix"
+)
 
 # COMMAND ----------
 
-expXgboostDF = spark.table("expXgboostDF")
+param_grid = (
+  ParamGridBuilder()
+  .addGrid(xgb.eta, [1e-1, 1e-2, 1e-3])
+  .addGrid(xgb.maxDepth, [2, 4, 8])
+  .build()
+)
 
-display(expXgboostDF.select("price", "prediction"))
-
-# COMMAND ----------
-
-from pyspark.ml.evaluation import RegressionEvaluator
-
-regressionEvaluator = RegressionEvaluator(predictionCol="prediction", labelCol="price", metricName="rmse")
-
-rmse = regressionEvaluator.evaluate(expXgboostDF)
-r2 = regressionEvaluator.setMetricName("r2").evaluate(expXgboostDF)
-print(f"RMSE is {rmse}")
-print(f"R2 is {r2}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Export to Python
-# MAGIC 
-# MAGIC We can also export our XGBoost model to use in Python for fast inference on small datasets.
+cv = CrossValidator(
+  estimator=xgb,
+  estimatorParamMaps=param_grid,
+  evaluator=bce,#mce,
+  numFolds=5
+)
 
 # COMMAND ----------
 
-# MAGIC %scala
-# MAGIC 
-# MAGIC val nativeModelPath = username + "_nativeModel"
-# MAGIC val xgboostModel = xgboostPipelineModel.stages.last.asInstanceOf[XGBoostRegressionModel]
-# MAGIC xgboostModel.nativeBooster.saveModel(nativeModelPath)
+import mlflow
+import mlflow.spark
 
-# COMMAND ----------
+spark_model_name = "best_model_spark"
 
-# MAGIC %md
-# MAGIC ## Predictions in Python
-# MAGIC 
-# MAGIC Let's pass in an example record to our Python XGBoost model and see how fast we can get predictions!!
-# MAGIC 
-# MAGIC Don't forget to exponentiate!
+with mlflow.start_run():
+  model = cv.fit(train_sdf_prepared)
+  best_params = dict(
+    eta_best=model.bestModel.getEta(),
+    maxDepth_best=model.bestModel.getMaxDepth()
+  )
+  mlflow.log_params(best_params)
+  
+  mlflow.spark.log_model(fitted_pipeline, "featuriser")
+  mlflow.spark.log_model(model, spark_model_name)
 
-# COMMAND ----------
-
-# MAGIC %python
-# MAGIC import numpy as np
-# MAGIC import xgboost as xgb
-# MAGIC bst = xgb.Booster({"nthread": 4})
-# MAGIC bst.load_model(username + "_nativeModel")
-# MAGIC 
-# MAGIC data = np.array([[0.0, 2.0, 0.0, 32.0, 9.0, 1.0, 1.0, 0.0, 0.0, 37.7431, -122.44509, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 100.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-# MAGIC log_pred = bst.predict(xgb.DMatrix(data))
-# MAGIC print(f"The predicted price for this rental is ${np.exp(log_pred)[0]:.2f}")
+  metrics = dict(
+    roc_test=bce.evaluate(model.transform(test_sdf_prepared))
+  )
+  mlflow.log_metrics(metrics)
 
 # COMMAND ----------
 

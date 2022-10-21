@@ -10,13 +10,75 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### Importing modules and disabling MLflow  
+
+# COMMAND ----------
+
+import os
+import mlflow
+mlflow.autolog(disable=True)
+
+# COMMAND ----------
+
 from pyspark.ml.feature import StringIndexer, VectorAssembler
 from pyspark.ml.regression import RandomForestRegressor
 from pyspark.ml import Pipeline
 
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06-clean.delta/"
-airbnbDF = spark.read.format("delta").load(filePath)
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Setting the default database and user name  
+# MAGIC ##### Substitute "renato" by your name in the `username` variable.
+
+# COMMAND ----------
+
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Reading Dataset
+
+# COMMAND ----------
+
+deltaPath = os.path.join("/", "tmp", username)    #If we were writing to the root folder and not to the DBFS
+if not os.path.exists(deltaPath):
+    os.mkdir(deltaPath)
+    
+print(deltaPath)
+
+airbnbDF = spark.read.format("delta").load(deltaPath)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Imputing Null Values  
+# MAGIC [Python](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrame.fillna.html)  
+
+# COMMAND ----------
+
+airbnbDF = airbnbDF.fillna(0)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Repeating the steps from previous Notebook
+
+# COMMAND ----------
+
 (trainDF, testDF) = airbnbDF.randomSplit([.8, .2], seed=42)
+
+# COMMAND ----------
 
 categoricalCols = [field for (field, dataType) in trainDF.dtypes if dataType == "string"]
 indexOutputCols = [x + "Index" for x in categoricalCols]
@@ -27,7 +89,9 @@ numericCols = [field for (field, dataType) in trainDF.dtypes if ((dataType == "d
 assemblerInputs = indexOutputCols + numericCols
 vecAssembler = VectorAssembler(inputCols=assemblerInputs, outputCol="features")
 
-rf = RandomForestRegressor(labelCol="price", maxBins=40)
+# COMMAND ----------
+
+rf = RandomForestRegressor(labelCol="price", maxBins=60)
 stages = [stringIndexer, vecAssembler, rf]
 pipeline = Pipeline(stages=stages)
 
@@ -94,7 +158,9 @@ from pyspark.ml.tuning import CrossValidator
 
 evaluator = RegressionEvaluator(labelCol="price", predictionCol="prediction")
 
-cv = CrossValidator(estimator=pipeline, evaluator=evaluator, estimatorParamMaps=paramGrid, 
+cv = CrossValidator(estimator=pipeline, 
+                    evaluator=evaluator, 
+                    estimatorParamMaps=paramGrid, 
                     numFolds=3, seed=42)
 
 # COMMAND ----------
@@ -119,7 +185,7 @@ cvModel = cv.fit(trainDF)
 
 # COMMAND ----------
 
-cvModel = cv.setParallelism(4).fit(trainDF)
+cvModel = cv.setParallelism(2).fit(trainDF)
 
 # COMMAND ----------
 
@@ -132,8 +198,12 @@ cvModel = cv.setParallelism(4).fit(trainDF)
 
 # COMMAND ----------
 
-cv = CrossValidator(estimator=rf, evaluator=evaluator, estimatorParamMaps=paramGrid, 
-                    numFolds=3, parallelism=4, seed=42)
+cv = CrossValidator(estimator=rf, 
+                    evaluator=evaluator, 
+                    estimatorParamMaps=paramGrid, 
+                    numFolds=3, 
+                    parallelism=2, 
+                    seed=42)
 
 stagesWithCV = [stringIndexer, vecAssembler, cv]
 pipeline = Pipeline(stages=stagesWithCV)
@@ -166,8 +236,7 @@ print(f"R2 is {r2}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC -sandbox
-# MAGIC &copy; 2020 Databricks, Inc. All rights reserved.<br/>
+# MAGIC Code modified and enhanced from 2020 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
 # MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="http://help.databricks.com/">Support</a>

@@ -90,6 +90,10 @@ display(spark.catalog.listDatabases())  #Alternative
 
 # COMMAND ----------
 
+!pwd
+
+# COMMAND ----------
+
 !ls -l data
 
 # COMMAND ----------
@@ -320,7 +324,7 @@ df.limit(10).display()
 # COMMAND ----------
 
 # TO DO WITH YOUR EARLY TIMESTAMPS FROM TWO TABLES ABOVE
-timeStampString = "2022-10-12T14:08:36.000+0000"
+timeStampString = "2022-10-20T12:28:26.000+0000"
 df = spark.read.format("delta").option("timestampAsOf", timeStampString).load(deltaPath)
 df.limit(10).display()
 

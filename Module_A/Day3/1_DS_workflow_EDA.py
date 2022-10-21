@@ -119,7 +119,7 @@ import pandas as pd
 
 # COMMAND ----------
 
-df = pd.read_csv('Data/Automobile_data.csv')
+df = pd.read_csv('data/Automobile_data.csv')
 df.head()
 
 # COMMAND ----------

@@ -46,8 +46,6 @@ datapath = os.path.join(os.getcwd(), "data", "airbnb", "listings.csv.gz")
 datapath = "file://" + datapath
 print(datapath)
 
-#filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06.csv"
-
 # COMMAND ----------
 
 # MAGIC %md

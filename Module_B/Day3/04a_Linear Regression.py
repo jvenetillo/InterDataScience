@@ -98,10 +98,10 @@ display(trainDF)
 # MAGIC %md
 # MAGIC There do appear some outliers in our dataset for the price ($10,000 a night??). Just keep this in mind when we are building our models :).
 # MAGIC 
-# MAGIC We will use `LinearRegression` to build our first model [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.regression.LinearRegression)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.regression.LinearRegression).
+# MAGIC We will use `LinearRegression` to build our first model  
+# MAGIC [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.regression.LinearRegression.html)
 # MAGIC 
-# MAGIC The cell below will fail because the Linear Regression estimator expects a vector of values as input. We will fix that with VectorAssembler below.  
-# MAGIC https://stackoverflow.com/questions/61056160/illegalargumentexception-column-must-be-of-type-structtypetinyint-sizeint-in
+# MAGIC The cell below will [fail](https://stackoverflow.com/questions/61056160/illegalargumentexception-column-must-be-of-type-structtypetinyint-sizeint-in) because the Linear Regression estimator expects a vector of values as input.  We will fix that with VectorAssembler below.  
 
 # COMMAND ----------
 
@@ -119,7 +119,11 @@ lrModel = lr.fit(trainDF)
 # MAGIC 
 # MAGIC What went wrong? Turns out that the Linear Regression **estimator** (`.fit()`) expected a column of Vector type as input.
 # MAGIC 
-# MAGIC We can easily get the values from the `bedrooms` column into a single vector using `VectorAssembler` [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.feature.VectorAssembler)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.feature.VectorAssembler). VectorAssembler is an example of a **transformer**. Transformers take in a DataFrame, and return a new DataFrame with one or more columns appended to it. They do not learn from your data, but apply rule based transformations.
+# MAGIC We can easily get the values from the `bedrooms` column into a single vector using `VectorAssembler`  
+# MAGIC [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.feature.VectorAssembler.html).  
+# MAGIC VectorAssembler is an example of a **transformer**.  
+# MAGIC Transformers take in a DataFrame, and return a new DataFrame with one or more columns appended to it.  
+# MAGIC They do not learn from your data, but apply rule based transformations.
 # MAGIC 
 # MAGIC You can see an example of how to use VectorAssembler on the [ML Programming Guide](https://spark.apache.org/docs/latest/ml-features.html#vectorassembler).
 
@@ -128,8 +132,11 @@ lrModel = lr.fit(trainDF)
 from pyspark.ml.feature import VectorAssembler
 
 vecAssembler = VectorAssembler(inputCols=["bedrooms"], outputCol="features")
-
 vecTrainDF = vecAssembler.transform(trainDF)
+
+# COMMAND ----------
+
+vecTrainDF.limit(10).display()
 
 # COMMAND ----------
 
@@ -175,7 +182,10 @@ from pyspark.ml.evaluation import RegressionEvaluator
 regressionEvaluator = RegressionEvaluator(predictionCol="prediction", labelCol="price", metricName="rmse")
 
 rmse = regressionEvaluator.evaluate(predDF)
+r2 = regressionEvaluator.setMetricName("r2").evaluate(predDF)
+
 print(f"RMSE is {rmse}")
+print(f"R2 is {r2}")
 
 # COMMAND ----------
 

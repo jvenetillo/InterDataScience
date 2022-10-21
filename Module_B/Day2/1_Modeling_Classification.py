@@ -488,7 +488,25 @@ X_train_name.surname.value_counts().plot(kind="hist", figsize=(12,4))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Given that most of the surnames are unique, let's just use a frequency encoder
+# MAGIC Given that most of the surnames are unique, let's just use a frequency encoder  
+# MAGIC https://contrib.scikit-learn.org/category_encoders/count.html
+
+# COMMAND ----------
+
+!pip install category_encoders
+
+# COMMAND ----------
+
+import category_encoders as ce
+
+# COMMAND ----------
+
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(X_train_name['title'].values.reshape(-1, 1))
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -530,6 +548,9 @@ X_train.head(5)
 # MAGIC After doing some research, we could know that a cabin number looks like ‘C123’ and the letter refers to the deck.  
 # MAGIC + We’re going to extract these and create a new feature, that contains a persons deck.  
 # MAGIC + And then we will convert the feature into a numeric variable.
+# MAGIC 
+# MAGIC 
+# MAGIC ![Cabins](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Olympic_%26_Titanic_cutaway_diagram.png/800px-Olympic_%26_Titanic_cutaway_diagram.png)
 
 # COMMAND ----------
 
@@ -576,7 +597,7 @@ X_test = pd.DataFrame(imp_mean.transform(X_test.values), columns=X_test.columns)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.8 - Dealing with numerif fields values
+# MAGIC ## 3.8 - Dealing with numeric fields values
 # MAGIC + Check there are no more missing values   
 # MAGIC + Check all features are numeric
 # MAGIC + Standardizing features
@@ -663,7 +684,6 @@ print(len(y_test[y_test == 1]))
 
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
@@ -780,7 +800,7 @@ def clf_eval(clf, X, y_true, classes=['Perished', 'Survived']):
 # MAGIC + It can also be thought of as a special case of linear regression when the outcome variable is categorical, where we are using the log of odds as a dependent variable.
 # MAGIC + It predicts the probability of occurrence of an event by fitting data to a logit function.
 # MAGIC 
-# MAGIC $f(x) = \frac{L}{1 + e^{-k(x-x_0)}} $  
+# MAGIC \\(f(x) = \frac{L}{1 + e^{-k(x-x_0)}}\\) 
 # MAGIC 
 # MAGIC Logistic regression, or logit regression, or logit model is a regression model where the dependent variable (DV) is categorical. In the binary case, a dependent variable (the output) can take only two values, "0" and "1", which represent outcomes such as pass/fail, win/lose, alive/dead or healthy/sick. Cases where the dependent variable has more than two outcome categories may be analysed in multinomial logistic regression, or, if the multiple categories are ordered, in ordinal logistic regression.
 # MAGIC 
@@ -838,7 +858,8 @@ from sklearn.linear_model import LogisticRegression
 # MAGIC Cs = np.linspace(0,1,10)
 # MAGIC max_iter = [10, 50, 100, 200]
 # MAGIC tol = [1e-5, 1e-4, 1e-3]
-# MAGIC param_grid=dict(C=Cs, max_iter=max_iter)
+# MAGIC fi = [True, False]
+# MAGIC param_grid=dict(C=Cs, max_iter=max_iter, tol=tol, fit_intercept=fi)
 # MAGIC 
 # MAGIC 
 # MAGIC clf_lr2 = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
@@ -1676,7 +1697,7 @@ from tpot import TPOTClassifier
 # MAGIC %%time
 # MAGIC 
 # MAGIC clf_tpot = TPOTClassifier(verbosity=1, 
-# MAGIC                           max_time_mins=60, 
+# MAGIC                           max_time_mins=2, 
 # MAGIC                           max_eval_time_mins=10, 
 # MAGIC                           population_size=100,
 # MAGIC                           generations=100,

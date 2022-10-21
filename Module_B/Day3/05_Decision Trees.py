@@ -11,8 +11,90 @@
 
 # COMMAND ----------
 
-filePath = "dbfs:/mnt/training/airbnb/sf-listings/sf-listings-2019-03-06-clean.delta/"
-airbnbDF = spark.read.format("delta").load(filePath)
+# MAGIC %md
+# MAGIC #### Importing modules and disabling MLflow  
+
+# COMMAND ----------
+
+import os
+import mlflow
+mlflow.autolog(disable=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Setting the default database and user name  
+# MAGIC ##### Substitute "renato" by your name in the `username` variable.
+
+# COMMAND ----------
+
+## Put your name here
+username = "renato"
+
+dbutils.widgets.text("username", username)
+spark.sql(f"CREATE DATABASE IF NOT EXISTS dsacademy_embedded_wave3_{username}")
+spark.sql(f"USE dsacademy_embedded_wave3_{username}")
+spark.conf.set("spark.sql.shuffle.partitions", 40)
+
+spark.sql("SET spark.databricks.delta.formatCheck.enabled = false")
+spark.sql("SET spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite = true")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Reading Dataset
+
+# COMMAND ----------
+
+deltaPath = os.path.join("/", "tmp", username)    #If we were writing to the root folder and not to the DBFS
+if not os.path.exists(deltaPath):
+    os.mkdir(deltaPath)
+    
+print(deltaPath)
+
+airbnbDF = spark.read.format("delta").load(deltaPath)
+
+# COMMAND ----------
+
+airbnbDF.limit(10).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Checking Null Values in Spark Dataframe
+
+# COMMAND ----------
+
+for col in airbnbDF.columns:
+  print(col, ":", airbnbDF.filter(f"{col} is NULL").count())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Imputing Null Values  
+# MAGIC [Python](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrame.fillna.html)  
+
+# COMMAND ----------
+
+airbnbDF.filter("host_total_listings_count is NULL").display()
+
+# COMMAND ----------
+
+airbnbDF = airbnbDF.fillna(0)
+
+# COMMAND ----------
+
+airbnbDF.filter("host_total_listings_count is NULL").display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Train/Test Split
+# MAGIC 
+# MAGIC Let's use the same 80/20 split with the same seed as the previous notebook so we can compare our results apples to apples (unless you changed the cluster config!)
+
+# COMMAND ----------
+
 (trainDF, testDF) = airbnbDF.randomSplit([.8, .2], seed=42)
 
 # COMMAND ----------
@@ -41,7 +123,8 @@ stringIndexer = StringIndexer(inputCols=categoricalCols, outputCols=indexOutputC
 # MAGIC %md
 # MAGIC ## VectorAssembler
 # MAGIC 
-# MAGIC Let's use the VectorAssembler to combine all of our categorical and numeric inputs [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.feature.VectorAssembler)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.feature.VectorAssembler).
+# MAGIC Let's use the VectorAssembler to combine all of our categorical and numeric inputs  
+# MAGIC [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.feature.VectorAssembler.html)
 
 # COMMAND ----------
 
@@ -58,7 +141,8 @@ vecAssembler = VectorAssembler(inputCols=assemblerInputs, outputCol="features")
 # MAGIC %md
 # MAGIC ## Decision Tree
 # MAGIC 
-# MAGIC Now let's build a `DecisionTreeRegressor` with the default hyperparameters [Python](https://spark.apache.org/docs/latest/api/python/pyspark.ml.html#pyspark.ml.regression.DecisionTreeRegressor)/[Scala](https://spark.apache.org/docs/latest/api/scala/#org.apache.spark.ml.regression.DecisionTreeRegressor).
+# MAGIC Now let's build a `DecisionTreeRegressor` with the default hyperparameters  
+# MAGIC [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.regression.DecisionTreeRegressor.html)  
 
 # COMMAND ----------
 
@@ -82,7 +166,7 @@ stages = [stringIndexer, vecAssembler, dt]
 pipeline = Pipeline(stages=stages)
 
 # Uncomment to perform fit
-# pipelineModel = pipeline.fit(trainDF)
+#pipelineModel = pipeline.fit(trainDF)
 
 # COMMAND ----------
 
@@ -106,11 +190,11 @@ pipeline = Pipeline(stages=stages)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Let's go ahead and increase maxBins to `40`.
+# MAGIC Let's go ahead and increase maxBins to `60`.
 
 # COMMAND ----------
 
-dt.setMaxBins(40)
+dt.setMaxBins(60)
 
 # COMMAND ----------
 
@@ -220,8 +304,7 @@ print(f"R2 is {r2}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC -sandbox
-# MAGIC &copy; 2020 Databricks, Inc. All rights reserved.<br/>
+# MAGIC Code modified and enhanced from 2020 Databricks, Inc. All rights reserved.<br/>
 # MAGIC Apache, Apache Spark, Spark and the Spark logo are trademarks of the <a href="http://www.apache.org/">Apache Software Foundation</a>.<br/>
 # MAGIC <br/>
 # MAGIC <a href="https://databricks.com/privacy-policy">Privacy Policy</a> | <a href="https://databricks.com/terms-of-use">Terms of Use</a> | <a href="http://help.databricks.com/">Support</a>
