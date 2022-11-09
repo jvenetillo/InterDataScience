@@ -76,19 +76,20 @@
 
 # COMMAND ----------
 
-#!pip install -U -q  scikit-learn 
-#!pip install -U -q  imbalanced-learn 
-#!pip install -U -q  xgboost 
-#!pip install -U -q  lightgbm 
-!pip install -U -q  rgf_python 
+#!pip install -U -q scikit-learn 
+#!pip install -U -q imbalanced-learn 
+#!pip install -U -q xgboost 
+#!pip install -U -q lightgbm 
+!pip install -U -q rgf_python 
 #!pip install -U -q catboost
-#!pip install -U -q  forestci
-!pip install -U -q  tpot 
+#!pip install -U -q forestci
+!pip install -U -q tpot 
 #!pip install -U -q pycaret
-#!pip install -U -q  tensorflow tensorboard 
-#!pip install -U -q  torch torchvision 
-#!pip install -U -q  delayed
-#!pip install -U -q  joblib 
+#!pip install -U -q tensorflow tensorboard 
+#!pip install -U -q torch torchvision 
+#!pip install -U -q delayed
+#!pip install -U -q joblib 
+#!pip install -U -q joblibspark
 
 # COMMAND ----------
 
@@ -493,7 +494,7 @@ X_train_name.surname.value_counts().plot(kind="hist", figsize=(12,4))
 
 # COMMAND ----------
 
-!pip install category_encoders
+!pip install -U -q category_encoders
 
 # COMMAND ----------
 
@@ -501,19 +502,15 @@ import category_encoders as ce
 
 # COMMAND ----------
 
-enc = OneHotEncoder(handle_unknown='ignore')
-enc.fit(X_train_name['title'].values.reshape(-1, 1))
+enc = ce.count.CountEncoder(verbose=0)
+enc.fit(X_train_name.surname)
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-surnames_train = pd.Series(X_train_name.surname.value_counts().values, name="Surname")
+surnames_train = pd.DataFrame(enc.transform(X_train_name.surname), columns=enc.get_feature_names())
 X_train = pd.concat([X_train, surnames_train], axis=1)
 
-surnames_test = pd.Series(X_test_name.surname.value_counts().values, name="Surname")
+surnames_test = pd.DataFrame(enc.transform(X_test_name.surname), columns=enc.get_feature_names())
 X_test = pd.concat([X_test, surnames_test], axis=1)
 
 X_train.head(5)
@@ -693,7 +690,13 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_recall_curve
 
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV   
+
+
+# If we are using a spark environment we can paralelize grid search
+from joblibspark import register_spark
+from sklearn.utils import parallel_backend
+register_spark()
 
 # COMMAND ----------
 
@@ -718,8 +721,9 @@ cv = model_selection.KFold(n_splits=10)
 # COMMAND ----------
 
 def mean_scores_cv(clf, cv, X, y):
+    print("Using f1 score")
     scores = model_selection.cross_val_score(clf, X, y, 
-                                             scoring=None, 
+                                             scoring="f1", 
                                              cv=cv, 
                                              n_jobs=1,
                                              verbose=0,
@@ -829,6 +833,9 @@ from sklearn.linear_model import LogisticRegression
 # MAGIC                             verbose=0, 
 # MAGIC                             warm_start=False, 
 # MAGIC                             n_jobs=-1).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_lr = mean_scores_cv(clf_lr, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_lr}\n")
 # MAGIC 
 # MAGIC roc_lr = clf_eval(clf_lr, X_test, y_test)
 
@@ -965,6 +972,9 @@ from sklearn.linear_model import RidgeClassifier
 # MAGIC                           solver='auto', 
 # MAGIC                           random_state=0).fit(X_train, y_train)
 # MAGIC 
+# MAGIC cv_rdg = mean_scores_cv(clf_rdg, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_rdg}\n")
+# MAGIC 
 # MAGIC roc_rdg = clf_eval(clf_rdg, X_test, y_test)
 
 # COMMAND ----------
@@ -993,6 +1003,9 @@ from sklearn.linear_model import Perceptron
 # MAGIC                      random_state=0, 
 # MAGIC                      class_weight=None, 
 # MAGIC                      warm_start=False).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_pcp = mean_scores_cv(clf_pcp, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_pcp}\n")
 # MAGIC 
 # MAGIC roc_pcp = clf_eval(clf_pcp, X_test, y_test)
 
@@ -1025,6 +1038,9 @@ from sklearn.linear_model import PassiveAggressiveClassifier
 # MAGIC                                       random_state=0, 
 # MAGIC                                       warm_start=False, 
 # MAGIC                                       class_weight=None).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_pac = mean_scores_cv(clf_pac, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_pac}\n")
 # MAGIC 
 # MAGIC roc_pac = clf_eval(clf_pac, X_test, y_test)
 
@@ -1063,6 +1079,9 @@ from sklearn.linear_model import SGDClassifier
 # MAGIC                          warm_start=False, 
 # MAGIC                          average=False).fit(X_train, y_train)
 # MAGIC 
+# MAGIC cv_sgdc = mean_scores_cv(clf_sgdc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_sgdc}\n")
+# MAGIC 
 # MAGIC roc_sgdc = clf_eval(clf_sgdc, X_test, y_test)
 
 # COMMAND ----------
@@ -1097,21 +1116,26 @@ from sklearn import svm
 # MAGIC 
 # MAGIC estimator = svm.SVC()
 # MAGIC 
-# MAGIC kernels = ['linear', 'poly', 'rbf', 'sigmoid']
-# MAGIC Cs = np.linspace(0.1,3,7)
-# MAGIC degrees = [2,3,4,5]
-# MAGIC gammas = np.logspace(-5, 0, 7)
+# MAGIC #kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+# MAGIC kernels = ['poly', 'rbf']
+# MAGIC Cs = np.linspace(0.1,3,5)
+# MAGIC degrees = [2,3]
+# MAGIC gammas = np.logspace(-5, 0, 5)
 # MAGIC 
-# MAGIC param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
+# MAGIC #param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
+# MAGIC param_grid=dict(kernel=kernels, degree=degrees)
 # MAGIC 
 # MAGIC 
 # MAGIC clf_svc = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
 # MAGIC #clf_svc = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
 # MAGIC                                        estimator=estimator,
 # MAGIC                                        cv=cv,                                       ## using cross validation
-# MAGIC                                        n_jobs=-1)
+# MAGIC                                        #n_jobs=-1
+# MAGIC                                       )
 # MAGIC 
-# MAGIC clf_svc.fit(X_train, y_train)
+# MAGIC #clf_svc.fit(X_train, y_train)
+# MAGIC with parallel_backend('spark', n_jobs=100):     #If we have a spark backend available https://github.com/joblib/joblib-spark
+# MAGIC     clf_svc.fit(X_train, y_train)
 # MAGIC 
 # MAGIC print(clf_svc.best_score_)
 # MAGIC print(clf_svc.best_estimator_.kernel)
@@ -1120,6 +1144,9 @@ from sklearn import svm
 # MAGIC print(clf_svc.best_estimator_.gamma)
 
 # COMMAND ----------
+
+cv_svc = mean_scores_cv(clf_svc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_svc}\n")
 
 roc_svc = clf_eval(clf_svc, X_test, y_test)
 
@@ -1159,6 +1186,9 @@ from sklearn.neighbors import KNeighborsClassifier
 # MAGIC                                metric_params=None, 
 # MAGIC                                n_jobs=-1).fit(X_train, y_train)
 # MAGIC 
+# MAGIC cv_knn = mean_scores_cv(clf_knn, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_knn}\n")
+# MAGIC 
 # MAGIC roc_knn = clf_eval(clf_knn, X_test, y_test)
 
 # COMMAND ----------
@@ -1192,6 +1222,9 @@ from sklearn.tree import DecisionTreeClassifier
 # MAGIC                                  random_state=0, 
 # MAGIC                                  max_leaf_nodes=None, 
 # MAGIC                                  class_weight=None,).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_dtc = mean_scores_cv(clf_dtc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_dtc}\n")
 # MAGIC 
 # MAGIC roc_dtc = clf_eval(clf_dtc, X_test, y_test)
 
@@ -1251,7 +1284,8 @@ from sklearn.ensemble import RandomForestClassifier
 # MAGIC                                 warm_start=False, 
 # MAGIC                                 class_weight=None).fit(X_train, y_train)
 # MAGIC 
-# MAGIC 
+# MAGIC cv_rf = mean_scores_cv(clf_rf, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_rf}\n")
 # MAGIC 
 # MAGIC roc_rf = clf_eval(clf_rf, X_test, y_test)
 
@@ -1288,6 +1322,10 @@ from sklearn.ensemble import BaggingClassifier
 # MAGIC %%time
 # MAGIC 
 # MAGIC clf_bgc = BaggingClassifier(clf_lr).fit(X_train, y_train)   ## Using the previously fitted Logistic Regression
+# MAGIC 
+# MAGIC cv_bgc = mean_scores_cv(clf_bgc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_bgc}\n")
+# MAGIC 
 # MAGIC roc_bgc = clf_eval(clf_bgc, X_test, y_test)
 
 # COMMAND ----------
@@ -1307,6 +1345,9 @@ from sklearn.ensemble import ExtraTreesClassifier
 # MAGIC                                max_depth=None,
 # MAGIC                                min_samples_split=3,
 # MAGIC                                random_state=0).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_etc = mean_scores_cv(clf_etc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_etc}\n")
 # MAGIC 
 # MAGIC roc_etc = clf_eval(clf_etc, X_test, y_test)
 
@@ -1340,6 +1381,9 @@ from sklearn.ensemble import AdaBoostClassifier
 # MAGIC                              learning_rate=0.1,
 # MAGIC                              algorithm='SAMME.R',
 # MAGIC                              random_state=0).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_abc = mean_scores_cv(clf_abc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_abc}\n")
 # MAGIC 
 # MAGIC roc_abc = clf_eval(clf_abc, X_test, y_test)
 
@@ -1379,6 +1423,9 @@ from sklearn.ensemble import GradientBoostingClassifier
 # MAGIC                                      n_iter_no_change=None, 
 # MAGIC                                      tol=0.0001, 
 # MAGIC                                      ccp_alpha=0.0).fit(X_train, y_train)
+# MAGIC                                      
+# MAGIC cv_gbc = mean_scores_cv(clf_gbc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_gbc}\n")                                   
 # MAGIC                                      
 # MAGIC roc_gbc = clf_eval(clf_gbc, X_test, y_test)                                     
 
@@ -1423,6 +1470,9 @@ import xgboost
 # MAGIC                                         seed=0,
 # MAGIC                                         use_label_encoder=False,
 # MAGIC                                         random_state=0).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_xgb = mean_scores_cv(clf_xgb, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_xgb}\n")
 # MAGIC 
 # MAGIC roc_xgb = clf_eval(clf_xgb, X_test, y_test)
 
@@ -1481,6 +1531,9 @@ import lightgbm as lgb
 # MAGIC clf_lgb.fit(X_train, y_train)
 # MAGIC 
 # MAGIC 
+# MAGIC cv_lgb = mean_scores_cv(clf_lgb, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_lgb}\n")
+# MAGIC 
 # MAGIC roc_lgb = clf_eval(clf_lgb, X_test, y_test)
 
 # COMMAND ----------
@@ -1503,6 +1556,10 @@ import lightgbm as lgb
 #                             depth=2,
 #                             train_dir=tmp_path)
 #clf_ctb.fit(X_train, y_train, verbose=False)
+
+#cv_ctb = mean_scores_cv(clf_ctb, cv, X_train, y_train)
+#print(f"This is the cross validated score of the model: {cv_ctb}\n")
+
 #roc_ctb = clf_eval(clf_ctb, X_test, y_test)
 
 # COMMAND ----------
@@ -1529,6 +1586,9 @@ from rgf.sklearn import RGFClassifier, FastRGFClassifier
 # MAGIC                         algorithm="RGF_Sib",
 # MAGIC                         test_interval=60,
 # MAGIC                         verbose=False,).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_rgf = mean_scores_cv(clf_rgf, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_rgf}\n")
 # MAGIC 
 # MAGIC roc_rgf = clf_eval(clf_rgf, X_test, y_test)
 
@@ -1558,6 +1618,9 @@ from sklearn.naive_bayes import BernoulliNB
 # MAGIC                      fit_prior=True, 
 # MAGIC                      class_prior=None).fit(X_train, y_train)
 # MAGIC 
+# MAGIC cv_bnb = mean_scores_cv(clf_bnb, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_bnb}\n")
+# MAGIC 
 # MAGIC roc_bnb = clf_eval(clf_bnb, X_test, y_test)
 
 # COMMAND ----------
@@ -1586,6 +1649,9 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 # MAGIC                                     random_state=0, 
 # MAGIC                                     multi_class='one_vs_rest', 
 # MAGIC                                     n_jobs=-1).fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_gpc = mean_scores_cv(clf_gpc, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_gpc}\n")
 # MAGIC 
 # MAGIC roc_gpc = clf_eval(clf_gpc, X_test, y_test)
 
@@ -1629,13 +1695,16 @@ import tensorflow as tf
 # MAGIC                     callbacks=[callback],
 # MAGIC                     verbose=0,
 # MAGIC                     shuffle=False,
-# MAGIC                     validation_data=(X_test, y_test))
+# MAGIC                     validation_split=0.2,
+# MAGIC                     #validation_data=(X_test, y_test)
+# MAGIC                    )
 # MAGIC 
 # MAGIC score = model.evaluate(X_test, y_test, verbose=0)
 # MAGIC print('Test loss:', score[0])
 # MAGIC print('Test accuracy:', score[1])
 # MAGIC 
 # MAGIC y_pred = (model.predict(X_test) > 0.5).astype("int32")
+# MAGIC 
 # MAGIC 
 # MAGIC clf_matrix = confusion_matrix(y_test, y_pred)
 # MAGIC print('Classification Report')
@@ -1704,6 +1773,10 @@ from tpot import TPOTClassifier
 # MAGIC                           n_jobs=-1)
 # MAGIC 
 # MAGIC clf_tpot.fit(X_train, y_train)
+# MAGIC 
+# MAGIC cv_tpot = mean_scores_cv(clf_tpot, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_tpot}\n")
+# MAGIC 
 # MAGIC roc_tpot = clf_eval(clf_tpot, X_test, y_test)
 
 # COMMAND ----------
@@ -1757,8 +1830,11 @@ from sklearn.ensemble import VotingClassifier
 # MAGIC                                             #('clf_tpot', clf_tpot),
 # MAGIC                                             ],
 # MAGIC                                 voting='hard',
-# MAGIC                                 weights=[1,1,1,1,1,1,1,2,1,2,1]).fit(X_train, y_train)
+# MAGIC                                 weights=[1,1,1,1,1,1,1,1,1,1,1]).fit(X_train, y_train)
 # MAGIC 
+# MAGIC cv_ens = mean_scores_cv(ensemble, cv, X_train, y_train)
+# MAGIC print(f"This is the cross validated score of the model: {cv_ens}\n")
+# MAGIC     
 # MAGIC roc_ens = clf_eval(ensemble, X_test, y_test)
 
 # COMMAND ----------
@@ -1984,3 +2060,7 @@ def plot_learning_curve(estimator,
 # MAGIC Criterion:{clf_rfo.best_estimator_.criterion})'''
 # MAGIC graph = plot_learning_curve(clf_rfo, title, X_train, y_train, cv=cv)
 # MAGIC graph.show()
+
+# COMMAND ----------
+
+

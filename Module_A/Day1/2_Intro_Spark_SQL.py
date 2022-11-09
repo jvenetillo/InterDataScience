@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Spark SQL
 # MAGIC 
-# MAGIC Demonstrate fundamental concepts in Spark SQL using the DataFrame API.
+# MAGIC This notebook demonstrates fundamental concepts in Spark SQL using the DataFrame API.
 # MAGIC 
 # MAGIC ##### Objectives
 # MAGIC 1. Creating a table
@@ -27,7 +27,7 @@
 # MAGIC 
 # MAGIC We can interact with Spark SQL in two ways:
 # MAGIC 1. Executing SQL queries
-# MAGIC 1. Working with the DataFrame API.
+# MAGIC 1. Working with the DataFrame API
 
 # COMMAND ----------
 
@@ -38,10 +38,10 @@
 
 # MAGIC %md
 # MAGIC #### Databases in Spark  
-# MAGIC Tables exist in Spark inside a database. So, We need to first talk about Databases before going to tables.  
+# MAGIC Tables exist in Spark inside a database. So, we need to first talk about databases before going to tables.  
 # MAGIC If we don’t specify any database, Spark uses the default database.
 # MAGIC 
-# MAGIC We can see the list of available databases with ``listDatabases``:
+# MAGIC We can see the list of available databases with ``listDatabases``.
 # MAGIC 
 # MAGIC This is how we can show the existing databases (with the DataFrame API):
 
@@ -72,8 +72,8 @@ spark.sql('show databases').show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Creating Database 
-# MAGIC *(with DataFrame API)*
+# MAGIC #### Creating a Database 
+# MAGIC *(with the DataFrame API)*
 # MAGIC 
 # MAGIC Let us take a look at the current database:
 
@@ -86,7 +86,7 @@ spark.catalog.currentDatabase()
 # MAGIC %md
 # MAGIC 
 # MAGIC You will now create databases in your workspace.  
-# MAGIC To name it correctly, **substitute "renato" by your name in the `username` variable.
+# MAGIC To name it correctly, **substitute "renato" by your name in the `username` variable**.
 
 # COMMAND ----------
 
@@ -117,7 +117,7 @@ spark.sql(f'show tables from dsacademy_embedded_wave3_{username}').show()
 # MAGIC #### Using SQL 
 # MAGIC 
 # MAGIC We need to creat a [widget](https://docs.databricks.com/notebooks/widgets.html) to allow for substituting the user in subsequent queries.  
-# MAGIC Substitute **"renato"** by **"your_name"** in the **CREATE WIDGET TEXT username DEFAULT "renato"** command.
+# MAGIC Substitute **"renato" by your name** in the **CREATE WIDGET TEXT username DEFAULT "renato"** command.
 
 # COMMAND ----------
 
@@ -267,7 +267,7 @@ spark.sql(f'show tables from dsacademy_embedded_wave3_{username}').show()
 
 # COMMAND ----------
 
-# MAGIC %md Using (with DataFrame API)
+# MAGIC %md Using (with the DataFrame API):
 
 # COMMAND ----------
 
@@ -359,7 +359,7 @@ display(spark.table("testtable")
 # MAGIC 
 # MAGIC ![query execution engine](https://files.training.databricks.com/images/aspwd/spark_sql_query_execution_engine.png)
 # MAGIC 
-# MAGIC <img src="https://files.training.databricks.com/images/icon_note_32.png" alt="Note"> Resilient Distributed Datasets (RDDs) are the low-level representation of datasets processed by a Spark cluster. In early versions of Spark, you had to write <a href="https://spark.apache.org/docs/latest/rdd-programming-guide.html" target="_blank">code manipulating RDDs directly</a>. In modern versions of Spark you should instead use the higher-level DataFrame APIs, which Spark automatically compiles into low-level RDD operations.
+# MAGIC <img src="https://files.training.databricks.com/images/icon_note_32.png" alt="Note"> **Resilient Distributed Datasets** (RDDs) are the low-level representation of datasets processed by a Spark cluster. In early versions of Spark, you had to write <a href="https://spark.apache.org/docs/latest/rdd-programming-guide.html" target="_blank">code manipulating RDDs directly</a>. In modern versions of Spark you should instead use the higher-level DataFrame APIs, which Spark automatically compiles into low-level RDD operations.
 
 # COMMAND ----------
 
@@ -506,7 +506,7 @@ usersP.printSchema()
 # MAGIC Conversely, DataFrame actions are methods that **trigger computation**.  
 # MAGIC Actions are needed to trigger the execution of any DataFrame transformations. 
 # MAGIC 
-# MAGIC For example, the `show()` action causes the following cell to execute transformations.
+# MAGIC For example, the `show()` action causes the following cell to execute transformations:
 
 # COMMAND ----------
 
@@ -589,7 +589,7 @@ display(spark.sql("SELECT * FROM usersPsqlview"))
 
 # MAGIC %md
 # MAGIC ### 1. Create a DataFrame from the `testtable` table
-# MAGIC - Use SparkSession to create a DataFrame from the `testtable` table
+# MAGIC - Use SparkSession to create a DataFrame from the `testtable` table.
 
 # COMMAND ----------
 
@@ -600,7 +600,7 @@ users = spark.table("testtable")
 
 # MAGIC %md
 # MAGIC ### 2. Display DataFrame and inspect schema
-# MAGIC - Use methods above to inspect DataFrame contents and schema
+# MAGIC - Use the methods above to inspect the DataFrame contents and schema.
 
 # COMMAND ----------
 
@@ -616,10 +616,10 @@ users.printSchema()
 
 # MAGIC %md
 # MAGIC ### 3. Apply transformations to filter and sort
-# MAGIC - Filter for rows where `country` is `Austria`
-# MAGIC - Sort rows by `name`
+# MAGIC - Filter for rows where `country` is `Austria`.
+# MAGIC - Sort rows by `name`.
 # MAGIC 
-# MAGIC <img src="https://files.training.databricks.com/images/icon_hint_32.png" alt="Hint"> Use single and double quotes in your filter SQL expression
+# MAGIC <img src="https://files.training.databricks.com/images/icon_hint_32.png" alt="Hint"> Use single and double quotes in your filter SQL expression.
 
 # COMMAND ----------
 
@@ -633,7 +633,7 @@ newusers = (users
 
 # MAGIC %md
 # MAGIC ### 4. Count results and take first 5 rows
-# MAGIC - Use DataFrame actions to count and take rows
+# MAGIC - Use DataFrame actions to count and take rows.
 
 # COMMAND ----------
 
@@ -648,9 +648,9 @@ for row in rows:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 5. Create the same DataFrame using SQL query
-# MAGIC - Use SparkSession to run a SQL query on the `events` table
-# MAGIC - Use SQL commands to write the same filter and sort the query used earlier
+# MAGIC ### 5. Create the same DataFrame using an SQL query
+# MAGIC - Use SparkSession to run an SQL query on the `events` table.
+# MAGIC - Use SQL commands to write the same filter and sort the query used earlier.
 
 # COMMAND ----------
 

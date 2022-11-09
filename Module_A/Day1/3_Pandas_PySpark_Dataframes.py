@@ -19,7 +19,8 @@
 # MAGIC 
 # MAGIC #### Why Pyspark then?
 # MAGIC 
-# MAGIC While Pandas stays one of the widely used libraries in dealing with tabular format data especially in Data Science, it does not fully support **parallelization**. Pyspark is a Python API for Spark. It has been released to support the collaboration between Python and Spark environments.
+# MAGIC While Pandas stays one of the widely used libraries in dealing with tabular format data especially in Data Science, it does not fully support **parallelization**.  
+# MAGIC Pyspark is a Python API for Spark. It has been released to support the collaboration between Python and Spark environments.
 # MAGIC 
 # MAGIC Pyspark with its *cluster computing* processes the data in a distributed manner by running the code on multiple nodes, leading to decreased execution times. With data being created exponentially every day, Data Scientists now have huge datasets to deal with, which is where distributed computing comes in. But what is Spark?
 

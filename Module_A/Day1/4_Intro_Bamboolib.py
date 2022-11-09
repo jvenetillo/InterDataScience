@@ -8,7 +8,8 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **bamboolib** is a GUI for pandas DataFrames.
+# MAGIC This notebook gives a very short glimpse at a package called **bamboolib**.  
+# MAGIC bamboolib is a Graphical User Interface (GUI) for Pandas DataFrames.
 # MAGIC 
 # MAGIC It provides an intuitive GUI that exports Python code and supports all common transformations and visualizations.
 # MAGIC Bamboolib is integrated with Databricks, allowing for a user-friendly exploration of the DBFS, as well as other useful features. 
@@ -27,13 +28,18 @@ import bamboolib as bam
 
 # COMMAND ----------
 
-# This opens a UI from which you can import your data
+# MAGIC %md
+# MAGIC The comment `bam` opens a UI from which you can import your data.
+
+# COMMAND ----------
+
+# This opens the UI 
 bam
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Use the winequality dataset to explore the Bamboolib functionality.
+# MAGIC To see the functionality of bamboolib, we use the winequality dataset to explore the Bamboolib functionality.
 
 # COMMAND ----------
 
@@ -44,7 +50,3 @@ df.info()
 # COMMAND ----------
 
 df
-
-# COMMAND ----------
-
-

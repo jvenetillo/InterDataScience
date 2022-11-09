@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Intro to APEX Platform
 # MAGIC 
-# MAGIC Demonstrate basic functionality and identify terms related to working in the Databricks workspace.
+# MAGIC This notebook will demonstrate basic functionality and identify terms related to working in the Databricks workspace.
 # MAGIC 
 # MAGIC 
 # MAGIC ##### Objectives
@@ -67,7 +67,7 @@ print("Run default language")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Alternatively you can use the exclamation sign `!` to execute shell commands
+# MAGIC Alternatively you can use the exclamation sign `!` to execute shell commands.
 
 # COMMAND ----------
 
@@ -165,7 +165,7 @@ displayHTML(html)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC %fs is shorthand for the DBUtils module: dbutils.fs
+# MAGIC `%fs` is shorthand for the DBUtils module: dbutils.fs
 # MAGIC 
 # MAGIC If you need any help, you can type `help` to recieve further information. 
 
@@ -177,8 +177,8 @@ displayHTML(html)
 
 # MAGIC %md
 # MAGIC #### List data files in DBFS using dbutils
-# MAGIC - Use **`dbutils`** to get the files at the directory above and save it to the variable **`files`**
-# MAGIC - Use the Databricks ``display()`` function to display the contents in **`files`**
+# MAGIC - Use **`dbutils`** to get the files in the directory above and save it to the variable **`files`**.
+# MAGIC - Use the Databricks ``display()`` function to display the contents in **`files`**.
 
 # COMMAND ----------
 

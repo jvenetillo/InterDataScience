@@ -2,15 +2,15 @@
 # MAGIC %md
 # MAGIC # Data Science workflow  
 # MAGIC 
-# MAGIC In this sequence of notebooks, we will exemplify the inner steps in the Data Science workflow.  
-# MAGIC We are not going to discuss the business requirements and deployment strategies, but just the phases below:
+# MAGIC In this sequence of notebooks, we will exemplify the inner steps of the Data Science workflow.  
+# MAGIC We are not going to discuss the business requirements and deployment strategies, just the phases below:
 # MAGIC 
 # MAGIC ### I - Exploratory Data Analysis (this notebook)  
 # MAGIC ##### II - Feature Engineering and Selection 
 # MAGIC ##### III - Modeling  
 # MAGIC ##### IV - Evaluation  
 # MAGIC 
-# MAGIC This notebook will cover the Exploratory Data Analysis (EDA)
+# MAGIC This notebook will cover the Exploratory Data Analysis (EDA).
 
 # COMMAND ----------
 
@@ -47,12 +47,12 @@
 # MAGIC 
 # MAGIC It has six sequential phases:
 # MAGIC 
-# MAGIC + Business understanding – What does the business need?
-# MAGIC + Data understanding – What data do we have / need? Is it clean?
-# MAGIC + Data preparation – How do we organize the data for modeling?
-# MAGIC + Modeling – What modeling techniques should we apply?
-# MAGIC + Evaluation – Which model best meets the business objectives?
-# MAGIC + Deployment – How do stakeholders access the results?
+# MAGIC 1. Business understanding – What does the business need?
+# MAGIC 1. Data understanding – What data do we have / need? Is it clean?
+# MAGIC 1. Data preparation – How do we organize the data for modeling?
+# MAGIC 1. Modeling – What modeling techniques should we apply?
+# MAGIC 1. Evaluation – Which model best meets the business objectives?
+# MAGIC 1. Deployment – How do stakeholders access the results?
 # MAGIC 
 # MAGIC 
 # MAGIC [CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
@@ -175,7 +175,7 @@ for col in df.columns:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC There are null values in our dataset in form of ‘?’ only but Pandas is not recognizing them so we will replace them into np.nan form.
+# MAGIC There are null values in our dataset in the form of ‘?’ but Pandas is not recognizing them. We will replace them with `np.nan`.
 
 # COMMAND ----------
 
@@ -202,7 +202,7 @@ sns.heatmap(df.isnull(),cbar=False,cmap='viridis')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Now observe that there are many missing values in normalized_losses while other columns have fewer missing values. We can’t drop the normalized_losses column as it may be important for our prediction.  
+# MAGIC Now observe that there are many missing values in 'normalized_losses' while other columns have fewer missing values. We can’t drop the 'normalized_losses' column as it may be important for our prediction.  
 # MAGIC We can also use the **missingno** libray for a better evaluation of the missing values. First we can check the quantity and how they distribute among the rows:
 
 # COMMAND ----------
@@ -233,7 +233,7 @@ msno.heatmap(df)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The dendrogram allows you to more fully correlate variable completion, revealing trends deeper than the pairwise ones visible in the correlation heatmap
+# MAGIC The dendrogram allows you to more fully correlate variable completion, revealing trends deeper than the pairwise ones visible in the correlation heatmap.
 
 # COMMAND ----------
 
@@ -243,7 +243,7 @@ msno.dendrogram(df)
 
 # MAGIC %md
 # MAGIC #### 3.2. Replacing the missing values
-# MAGIC We will be replacing these missing values with mean because the number of missing values is not great (we could have used the median too).  
+# MAGIC We will be replacing these missing values with the mean because the number of missing values is not great (we could have used the median too).  
 # MAGIC Later, in the data preparation phase, we will learn other imputation techniques.
 
 # COMMAND ----------
@@ -274,7 +274,7 @@ df.head()
 # MAGIC 
 # MAGIC This is the most important step in EDA. 
 # MAGIC - This step will decide how much insight you can get.
-# MAGIC - Checking the distributions is fundamental for feature selection and the modeling phase
+# MAGIC - Checking the distributions is fundamental for feature selection and the modeling phase.
 # MAGIC - This step varies from person to person in terms of their questioning ability. 
 # MAGIC 
 # MAGIC Let's check the univariate and bivariate distributions and correlation between different variables, this will give us a roadmap on how to proceed further.
@@ -284,7 +284,7 @@ df.head()
 # MAGIC %md
 # MAGIC #### 4.1 Univariate Analysis  
 # MAGIC 
-# MAGIC The goal here is just to check the distribution of numeric and categorical variables (more about this later in the course)  
+# MAGIC The goal here is just to check the distribution of numeric and categorical variables (more about this later in the course). 
 # MAGIC We can quickly check the distributions of every numeric column:
 
 # COMMAND ----------
@@ -343,7 +343,7 @@ sns.boxplot(x="peak-rpm", data=df, ax=ax)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Although it is not one of the recommended plots, we can always use the pie plots in special situations:
+# MAGIC Although it is not one of the recommended plots, we can always use pie plots in special situations:
 
 # COMMAND ----------
 
@@ -354,7 +354,7 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Barplots with frequencies can be created on Matplotlib
+# MAGIC Barplots with frequencies can be created on Matplotlib.
 
 # COMMAND ----------
 
@@ -363,7 +363,7 @@ df["body-style"].value_counts().plot(kind="bar", figsize=(10,6))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC There is no need to separately calculate the count when using the sns.countplot() function
+# MAGIC There is no need to separately calculate the count when using the `sns.countplot()` function.
 
 # COMMAND ----------
 
@@ -375,7 +375,7 @@ sns.countplot(df["body-style"], ax=ax)
 # MAGIC %md
 # MAGIC #### 4.2 Bivariate Analysis  
 # MAGIC 
-# MAGIC Now we want to check the relationships between pais of variables. We can start by drawing a pairplot and a correlation plot.
+# MAGIC Now we want to check the relationships between pairs of variables. We can start by drawing a pairplot and a correlation plot.
 
 # COMMAND ----------
 
@@ -492,7 +492,7 @@ sns.jointplot(x='horsepower',y='price', data=df, kind='hex')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We can see that most of the horsepower value lies between 50-150 has price mostly between 5000-25000, there are outliers also(between 200-300).  
+# MAGIC We can see that most of the horsepower values are lying between 50-150 and have a price mostly between 5000-25000. There are also outliers (between 200-300).  
 # MAGIC Let’s see a count between 50-100 i.e univariate analysis of horsepower.
 
 # COMMAND ----------
@@ -545,7 +545,7 @@ plt.ylabel('Price')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We can see price decreases with an increase in higway_mpg.
+# MAGIC We can see price decreases with an increase in 'higway-mpg'.
 
 # COMMAND ----------
 

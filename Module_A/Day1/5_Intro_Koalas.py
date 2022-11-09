@@ -42,9 +42,6 @@ import pyspark.pandas as ps   #This is the new Pyspark API to Koalas
 # COMMAND ----------
 
 s = ps.Series([1, 3, 5, np.nan, 6, 8])
-
-# COMMAND ----------
-
 s
 
 # COMMAND ----------
