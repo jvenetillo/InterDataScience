@@ -415,7 +415,7 @@ df8 = spark.createDataFrame([('a', 1, 2), ('a', 1, 4), ('c', 5, 6)],
 # COMMAND ----------
 
 # PYSPARK - Shape of dataframe
-print((df8.count(), len(df4.columns)))
+print((df8.count(), len(df8.columns)))
 
 # COMMAND ----------
 

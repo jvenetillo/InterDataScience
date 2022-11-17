@@ -1,5 +1,10 @@
 # Databricks notebook source
 # MAGIC %md
+# MAGIC ### Exploring RBI Datasets for [DS Academy Apex workspace](https://wiki.rbinternational.com/confluence/pages/viewpage.action?pageId=462816365)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC Install the AWS tool for finding data
 
 # COMMAND ----------
@@ -31,7 +36,7 @@
 
 # COMMAND ----------
 
-!aws s3 ls ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_API/ --region eu-central-1
+!aws s3 ls ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_DESCRIPTION/ --region eu-central-1
 
 # COMMAND ----------
 
@@ -40,7 +45,7 @@
 
 # COMMAND ----------
 
-spark.sql("SELECT * FROM parquet.`s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_API/` LIMIT 10").display()
+spark.sql("SELECT * FROM parquet.`s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_DESCRIPTION/` LIMIT 10").display()
 
 # COMMAND ----------
 
@@ -49,7 +54,7 @@ spark.sql("SELECT * FROM parquet.`s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e
 
 # COMMAND ----------
 
-spark.read.format("parquet").load("s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_API/").display()
+spark.read.format("parquet").load("s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_DESCRIPTION/").display()
 
 # COMMAND ----------
 
@@ -60,7 +65,7 @@ spark.read.format("parquet").load("s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3
 
 # MAGIC %sql
 # MAGIC SELECT * 
-# MAGIC FROM parquet. `s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_API/`;
+# MAGIC FROM parquet. `s3://ho-adl-pz-orbis-xqwdemgcs5imcuu7ssgme8d3e35xyeuc1a-s3alias/CORPORATE_ORBIS_EXPLORATION/ORBIS_API/ORBIS_API_ORBIS_DESCRIPTION/`;
 
 # COMMAND ----------
 
