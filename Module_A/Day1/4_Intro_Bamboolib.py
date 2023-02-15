@@ -9,9 +9,11 @@
 
 # MAGIC %md
 # MAGIC This notebook gives a very short glimpse at a package called **bamboolib**.  
-# MAGIC bamboolib is a Graphical User Interface (GUI) for Pandas DataFrames.
 # MAGIC 
-# MAGIC It provides an intuitive GUI that exports Python code and supports all common transformations and visualizations.
+# MAGIC Bamboolib is a library for Python that allows you to create and edit dataframes using a graphical user interface (GUI) in your notebook. It allows you to perform common data cleaning and manipulation tasks, such as sorting, filtering, and adding or deleting columns, without writing any code.
+# MAGIC 
+# MAGIC Bamboolib is built on top of the Pandas library, and it allows you to use the full power of Pandas while still benefiting from the convenience of a GUI. It also includes a number of additional features, such as automatic backup of dataframes, support for undo/redo, and integration with popular visualization libraries like Matplotlib and Seaborn.
+# MAGIC 
 # MAGIC Bamboolib is integrated with Databricks, allowing for a user-friendly exploration of the DBFS, as well as other useful features. 
 
 # COMMAND ----------
@@ -49,4 +51,14 @@ df.info()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC Have a go at playing around with the different functionalities the UI offers:
+
+# COMMAND ----------
+
 df
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC For more information, take a look at the [bamboolib documentation](https://docs.bamboolib.8080labs.com/).

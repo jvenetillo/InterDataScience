@@ -1,8 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Introduction to Data Science
+# MAGIC # Classification Models
 # MAGIC 
-# MAGIC ## Predictive Analysis - numerical and categorical data
+# MAGIC This notebook will guide you from beginning to end of a classification use case. It will demonstrate several different classification models. 
 # MAGIC 
 # MAGIC ### The sinking of Titanic  
 # MAGIC Based on [this](https://www.kaggle.com/c/titanic-gettingStarted) Kaggle Competition.
@@ -17,6 +17,7 @@
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC **The Data Set**   
 # MAGIC The sinking of the RMS Titanic is one of the most infamous shipwrecks in history.  On April 15, 1912, during her maiden voyage, the Titanic sank after colliding with an iceberg, killing 1502 out of 2224 passengers and crew. This sensational tragedy shocked the international community and led to better safety regulations for ships.
 # MAGIC 
 # MAGIC One of the reasons that the shipwreck led to such loss of life was that there were not enough lifeboats for the passengers and crew. Although there was some element of luck involved in surviving the sinking, some groups of people were more likely to survive than others, such as women, children, and the upper-class.
@@ -26,41 +27,41 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC VARIABLE DESCRIPTIONS:
-# MAGIC survival        Survival
-# MAGIC                 (0 = No; 1 = Yes)
-# MAGIC pclass          Passenger Class
-# MAGIC                 (1 = 1st; 2 = 2nd; 3 = 3rd)
-# MAGIC name            Name
-# MAGIC sex             Sex
-# MAGIC age             Age
-# MAGIC sibsp           Number of Siblings/Spouses Aboard
-# MAGIC parch           Number of Parents/Children Aboard
-# MAGIC ticket          Ticket Number
-# MAGIC fare            Passenger Fare
-# MAGIC cabin           Cabin
-# MAGIC embarked        Port of Embarkation
+# MAGIC ## Varbiable Descriptions
+# MAGIC + **survival**: Survival
+# MAGIC  (0 = Did not survive; 1 = Survived)
+# MAGIC + **pclass**: Passenger Class
+# MAGIC  (1 = 1st; 2 = 2nd; 3 = 3rd)
+# MAGIC + **name**: Full name of passenger
+# MAGIC + **sex**: Sex of passenger
+# MAGIC + **age**: Age
+# MAGIC + **sibsp**: Number of Siblings/Spouses Aboard
+# MAGIC + **parch**: Number of Parents/Children Aboard
+# MAGIC + **ticket**: Ticket Number
+# MAGIC + **fare**: Passenger Fare
+# MAGIC + **cabin**: Cabin
+# MAGIC + **embarked**: Port of Embarkation
 # MAGIC                 (C = Cherbourg; Q = Queenstown; S = Southampton)
 # MAGIC 
-# MAGIC SPECIAL NOTES:
-# MAGIC Pclass is a proxy for socio-economic status (SES)
-# MAGIC  1st ~ Upper; 2nd ~ Middle; 3rd ~ Lower
 # MAGIC 
-# MAGIC Age is in Years; Fractional if Age less than One (1)
-# MAGIC  If the Age is Estimated, it is in the form xx.5
 # MAGIC 
-# MAGIC With respect to the family relation variables (i.e. sibsp and parch)
+# MAGIC #### SPECIAL NOTES:
+# MAGIC + **Pclass** is a proxy for socio-economic status (SES):
+# MAGIC 1st ~ Upper; 2nd ~ Middle; 3rd ~ Lower
+# MAGIC 
+# MAGIC + **Age** is in Years; Fractional if the age is less than One (1)   
+# MAGIC If the age is estimated, it is in the form xx.5
+# MAGIC 
+# MAGIC + For the family relation variables (i.e. **sibsp** and **parch**)
 # MAGIC some relations were ignored.  The following are the definitions used
-# MAGIC for sibsp and parch.
-# MAGIC 
-# MAGIC Sibling:  Brother, Sister, Stepbrother, or Stepsister of Passenger Aboard Titanic
-# MAGIC Spouse:   Husband or Wife of Passenger Aboard Titanic (Mistresses and Fiances Ignored)
-# MAGIC Parent:   Mother or Father of Passenger Aboard Titanic
-# MAGIC Child:    Son, Daughter, Stepson, or Stepdaughter of Passenger Aboard Titanic
-# MAGIC 
-# MAGIC Other family relatives excluded from this study include cousins,
+# MAGIC for **sibsp** and **parch**:    
+# MAGIC **Sibling**:  Brother, Sister, Stepbrother, or Stepsister of Passenger Aboard Titanic   
+# MAGIC **Spouse**:   Husband or Wife of Passenger Aboard Titanic (Mistresses and Fiances ignored)   
+# MAGIC **Parent**:   Mother or Father of Passenger Aboard Titanic   
+# MAGIC **Child**:    Son, Daughter, Stepson, or Stepdaughter of Passenger Aboard Titanic   
+# MAGIC Family relatives excluded from this study include cousins,
 # MAGIC nephews/nieces, aunts/uncles, and in-laws.  Some children travelled
-# MAGIC only with a nanny, therefore parch=0 for them.  As well, some
+# MAGIC only with a nanny, therefore parch is 0 for them.  Some
 # MAGIC travelled with very close friends or neighbors in a village, however,
 # MAGIC the definitions do not support such relations.
 
@@ -73,6 +74,8 @@
 
 # MAGIC %md
 # MAGIC ## 1.1 - (Installing and) Loading Basic Packages
+# MAGIC 
+# MAGIC The following packages are needed to run this notebook. Should you find some of them missing when going through, de-comment the respective line to install the package. 
 
 # COMMAND ----------
 
@@ -94,31 +97,18 @@
 # COMMAND ----------
 
 import os
-import sys
-import time
-import pickle
 import itertools
 import warnings
 import string
 import re
 
 import numpy as np
-import pylab
 import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.font_manager import FontProperties
 import seaborn as sns
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-
-from IPython.display import display, Image
-from IPython.core.interactiveshell import InteractiveShell
 
 import warnings
 warnings.filterwarnings('ignore')
-
-%matplotlib inline
 
 # COMMAND ----------
 
@@ -152,14 +142,7 @@ import mlflow
 # COMMAND ----------
 
 datapath = "./data/Titanic"
-
-# COMMAND ----------
-
 df_train = pd.read_csv(os.path.join(datapath,'kaggle_titanic_train.csv'))
-# df_test = pd.read_csv(os.path.join(datapath,'kaggle_titanic_test.csv')) # No labels, not using
-
-# COMMAND ----------
-
 df_train.head()
 
 # COMMAND ----------
@@ -168,7 +151,6 @@ df_train.info(verbose=True, show_counts=True)
 
 # COMMAND ----------
 
-#print(df_train.columns)
 print(df_train.select_dtypes(include='number').columns)
 print(df_train.select_dtypes(include='object').columns)
 print(df_train.select_dtypes(include='category').columns)
@@ -176,14 +158,11 @@ print(df_train.select_dtypes(include='category').columns)
 # COMMAND ----------
 
 print(df_train.dtypes)
-#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='int64')])
-#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='float64')])
-#print(df_train.dtypes[df_train.dtypes.map(lambda x: x =='object')])
 
 # COMMAND ----------
 
 for cat in df_train.columns:
-    print(f"Number of levels in category '{cat}': \b {df_train[cat].unique().size:2.2f} ")
+    print(f"Number of categories in `{cat+'`:':13s} \b {df_train[cat].unique().size:3d} ")
 
 # COMMAND ----------
 
@@ -204,13 +183,16 @@ df_train.describe()
 # There are many values for name and ticket
 
 for cat in df_train.select_dtypes(include='object').columns:
-    print(f"Unique values for category '{cat}': \b {df_train[cat].unique()[0:20]}\n")
+    print(f"Unique values for category '{cat}':")
+    for name in df_train[cat].unique()[0:20]:
+        print(f"   {name}")
+    print()
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 2.3 - Checking for missing values  
-# MAGIC This part demands a closer look to check if there are missing values not immediately identifiable
+# MAGIC Remember that a careful analysis of missing values takes some time, as missing values are often not immediately identifiable. 
 
 # COMMAND ----------
 
@@ -236,24 +218,13 @@ sns.heatmap(df_train.isnull(),cbar=False,cmap='viridis')
 
 # COMMAND ----------
 
-#!pip install missingno
 import missingno as msno
-
-# COMMAND ----------
-
 msno.bar(df_train, figsize=(12,6))
 
 # COMMAND ----------
 
-msno.matrix(df_train, figsize=(12,6))
-
-# COMMAND ----------
-
-msno.heatmap(df_train, figsize=(12,6))
-
-# COMMAND ----------
-
-msno.dendrogram(df_train, figsize=(12,6))
+# MAGIC %md
+# MAGIC The columns with missing values are 'Age', 'Cabin' and 'Embarked'. However, we will not drop any records but instead use different techniques to deal with these. 
 
 # COMMAND ----------
 
@@ -286,68 +257,69 @@ from sklearn.preprocessing import LabelBinarizer
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.1 - Creating train & test subsets:
+# MAGIC ## 3.1 - Creating train & test subsets
+# MAGIC Before splitting we will remove 'PassengerId' because it contains only unique values without inherent order.
 
 # COMMAND ----------
 
 df_train.drop(["PassengerId"], axis=1, inplace=True)
-y = df_train.pop("Survived")
-y
+target = df_train.pop("Survived")
 
 # COMMAND ----------
 
-X_train, X_test, y_train, y_test = model_selection.train_test_split(df_train, y, test_size=0.2, random_state=0)
-
-X_train.reset_index(drop=True, inplace=True)
-X_test.reset_index(drop=True, inplace=True)
-y_train.reset_index(drop=True, inplace=True)
-y_test.reset_index(drop=True, inplace=True)
+X_train, X_test, y_train, y_test = model_selection.train_test_split(df_train, target, test_size=0.2, random_state=0)
 
 print(X_train.shape)
 print(X_test.shape)
+
 print(y_train.shape)
 print(y_test.shape)
 
 # COMMAND ----------
+
+# drop old index as it is meaningless
+X_train.reset_index(drop=True, inplace=True)
+X_test.reset_index(drop=True, inplace=True)
+y_train.reset_index(drop=True, inplace=True)
+y_test.reset_index(drop=True, inplace=True)
 
 X_train.head()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3.2 - Transforming Sex/Gender (stateful/binary)
+# MAGIC ## 3.2 - Transforming Sex (stateful/binary)
+# MAGIC We start by using one hot encoding on the 'Sex' feature. This column did not have any unknown values. If it had, `handle_unknown='ignore'` makes it so that the resulting one-hot encoded columns for this feature will be all zero. 
 
 # COMMAND ----------
 
 enc = OneHotEncoder(handle_unknown='ignore')
 enc.fit(X_train['Sex'].values.reshape(-1, 1))
+enc.categories_[0]
 
 # COMMAND ----------
 
-enc.categories_[0]
+# MAGIC %md
+# MAGIC After fitting the encoder, we create the one-hot encoded columns, drop the old 'Sex' column and concatenate the new columns to our dataframe.
 
 # COMMAND ----------
 
 gender_train = pd.DataFrame(enc.transform(X_train['Sex'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0], dtype=np.int8)
 gender_test = pd.DataFrame(enc.transform(X_test['Sex'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0], dtype=np.int8)
 
-# COMMAND ----------
-
-gender_train[0:2]
-
-# COMMAND ----------
-
 X_train.drop(['Sex'], axis=1, inplace=True)
 X_train = pd.concat([X_train, gender_train], axis=1)
+
 X_test.drop(['Sex'], axis=1, inplace=True)
 X_test = pd.concat([X_test, gender_test], axis=1)
+
 X_train.head(5)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 3.3 - Transforming Embarked (stateful)  
-# MAGIC  We can decide to substitute the missing values using a missing value imputation technique, or simply encoding the missing values as an additional category using OHE
+# MAGIC We decide to substitute the missing values using a missing value imputation technique. Simply put, we will encode the missing values as an additional category using OHE.
 
 # COMMAND ----------
 
@@ -357,24 +329,21 @@ enc.fit(X_train['Embarked'].values.reshape(-1, 1))
 # COMMAND ----------
 
 embarked_train = pd.DataFrame(enc.transform(X_train['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
-embarked_train.rename({np.nan: "U"}, axis='columns', inplace=True)   #Rename the column with name "nan" to avoid further problems
+embarked_train.rename({np.nan: "U"}, axis='columns', inplace=True)   # Rename the column with name "nan" to avoid further problems
+
 embarked_test = pd.DataFrame(enc.transform(X_test['Embarked'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
-embarked_test.rename({np.nan: "U"}, axis='columns', inplace=True)
+embarked_test.rename({np.nan: "U"}, axis='columns', inplace=True)    # Rename the column with name "nan" to avoid further problems
 
-# COMMAND ----------
-
-embarked_train.columns
-
-# COMMAND ----------
-
-embarked_train[0:2]
+embarked_train[0:5]
 
 # COMMAND ----------
 
 X_train.drop(['Embarked'], axis=1, inplace=True)
 X_train = pd.concat([X_train, embarked_train], axis=1)
+
 X_test.drop(['Embarked'], axis=1, inplace=True)
 X_test = pd.concat([X_test, embarked_test], axis=1)
+
 X_train.head(5)
 
 # COMMAND ----------
@@ -419,10 +388,16 @@ def name_sep(data):
 
 dict_train_name = dict(zip(['surname', 'title', 'newname'], name_sep(X_train["Name"])))
 X_train_name = pd.DataFrame(dict_train_name)
+
 dict_test_name = dict(zip(['surname', 'title', 'newname'], name_sep(X_test["Name"])))
 X_test_name = pd.DataFrame(dict_test_name)
 
 X_train_name.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC We now have a feature 'titles' which might be interesting for our predictions, so we will analyze it further. 
 
 # COMMAND ----------
 
@@ -431,6 +406,7 @@ X_train_name.title.value_counts()
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC There are several unique titles. These are often not meaningful.  
 # MAGIC Let's reduce the feature space converting some equivalent titles:
 
 # COMMAND ----------
@@ -453,6 +429,7 @@ X_train_name.title.value_counts()
 
 # MAGIC %md
 # MAGIC ### 3.4.1 - Encoding Title
+# MAGIC Now that we have reduced the number of distinct categories, we can use one-hot encoding as before to translate the titles into binary values. 
 
 # COMMAND ----------
 
@@ -464,23 +441,23 @@ enc.fit(X_train_name['title'].values.reshape(-1, 1))
 title_train = pd.DataFrame(enc.transform(X_train_name['title'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
 title_test = pd.DataFrame(enc.transform(X_test_name['title'].values.reshape(-1, 1)).toarray(), columns=enc.categories_[0],dtype=np.int8)
 
-# COMMAND ----------
-
 title_train.head(5)
 
 # COMMAND ----------
 
 X_train.drop(['Name'], axis=1, inplace=True)
 X_train = pd.concat([X_train, title_train], axis=1)
+
 X_test.drop(['Name'], axis=1, inplace=True)
 X_test = pd.concat([X_test, title_test], axis=1)
+
 X_train.head(5)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### 3.4.2 - Encoding Surname
-# MAGIC First let's examine the frequency of surnames:
+# MAGIC Let's examine the frequency of surnames:
 
 # COMMAND ----------
 
@@ -489,7 +466,8 @@ X_train_name.surname.value_counts().plot(kind="hist", figsize=(12,4))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Given that most of the surnames are unique, let's just use a frequency encoder  
+# MAGIC Given that most of the surnames are unique, let's just use a frequency encoder.
+# MAGIC As the name suggests, this type of encoder replaces the names of the groups with the group counts, potentially giving more frequent names more weight. 
 # MAGIC https://contrib.scikit-learn.org/category_encoders/count.html
 
 # COMMAND ----------
@@ -499,8 +477,6 @@ X_train_name.surname.value_counts().plot(kind="hist", figsize=(12,4))
 # COMMAND ----------
 
 import category_encoders as ce
-
-# COMMAND ----------
 
 enc = ce.count.CountEncoder(verbose=0)
 enc.fit(X_train_name.surname)
@@ -523,14 +499,14 @@ X_train.head(5)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We can indeed data mine out some interesting relationship from Ticket number. But I think it is best to drop it.  
-# MAGIC We could find some relationship between Pclass and Ticket number, and although one could see that there might be some relationship between them, it is not very strong  
-# MAGIC We decided to drop this variable as well.
+# MAGIC We can indeed gather interesting information from 'Ticket' but for this demonstration we will drop it.
+# MAGIC We could also try to find some relationship between 'Pclass' and 'Ticket' but their correlation is not very strong, so we decided to drop this variable as well.
 
 # COMMAND ----------
 
 X_train.drop(['Ticket'], axis=1, inplace=True)
 X_test.drop(['Ticket'], axis=1, inplace=True)
+
 X_train.head(5)
 
 # COMMAND ----------
@@ -541,54 +517,55 @@ X_train.head(5)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Instead of using the Cabin feature as it is - using traditional hot-encoding, we can try using only the letters.  
-# MAGIC After doing some research, we could know that a cabin number looks like ‘C123’ and the letter refers to the deck.  
-# MAGIC + We’re going to extract these and create a new feature, that contains a persons deck.  
-# MAGIC + And then we will convert the feature into a numeric variable.
-# MAGIC 
+# MAGIC It might be tempting to discard the 'Cabin' because of the high number of missing values, as well as because of the large amount of unique values. 
+
+# COMMAND ----------
+
+print(f"Number of distinct 'Cabin' values: {len(X_train['Cabin'].value_counts())}")
+print(f"Number of unknown values: {X_train['Cabin'].isna().sum()}")
+
+# COMMAND ----------
+
+# MAGIC %md The second issue, however, can be overcome by researching what the cabin numbers mean: The first letter indicates the level on which the cabin is located, whereas the number is the concrete cabin number. The level might contain significant information on the social status of the passengers, or the distance to the lifeboats.
 # MAGIC 
 # MAGIC ![Cabins](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Olympic_%26_Titanic_cutaway_diagram.png/800px-Olympic_%26_Titanic_cutaway_diagram.png)
 
 # COMMAND ----------
 
-X_train['Cabin'].value_counts()
+# MAGIC %md
+# MAGIC Thus we will only use the first letter of the 'Cabin' feature. Unknown values will receive the letter 'U'.
 
 # COMMAND ----------
 
-deck = {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6, "G": 7, "U": 8}
-data = [X_train, X_test]
-
-for dataset in data:
+def replace_cabin_with_deck(dataset):
+    deck = {"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6, "G": 7, "U": 8}
+    
     dataset['Cabin'] = dataset['Cabin'].fillna("U0")
     dataset['Deck'] = dataset['Cabin'].map(lambda x: re.compile("([a-zA-Z]+)").search(x).group())
     dataset['Deck'] = dataset['Deck'].map(deck)
     dataset['Deck'] = dataset['Deck'].fillna(0)
     dataset['Deck'] = dataset['Deck'].astype(int)
+    dataset.drop(['Cabin'], axis=1, inplace=True)
 
 # COMMAND ----------
 
-X_train.drop(['Cabin'], axis=1, inplace=True)
-X_test.drop(['Cabin'], axis=1, inplace=True)
-
+replace_cabin_with_deck(X_train)
+replace_cabin_with_deck(X_test)
 X_train.head(5)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 3.7 - Transforming Age (stateful)  
-# MAGIC We will use the iterative inputer that chooses to fill the missing values using a model with the other features
+# MAGIC We will use the iterative inputer wchich fills missing values using a model based on the other features. 
 
 # COMMAND ----------
 
 imp_mean = IterativeImputer(random_state=0)
-
-# COMMAND ----------
-
 imp_mean.fit(X_train)
 
-# COMMAND ----------
-
 X_train = pd.DataFrame(imp_mean.transform(X_train.values), columns=X_train.columns)
+
 X_test = pd.DataFrame(imp_mean.transform(X_test.values), columns=X_test.columns)
 
 # COMMAND ----------
@@ -614,11 +591,7 @@ X_test.head()
 
 # COMMAND ----------
 
-# http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html  
 from sklearn.preprocessing import StandardScaler
-
-# COMMAND ----------
-
 scaler = StandardScaler()
 
 for column in X_train.columns:
@@ -632,25 +605,33 @@ X_train.head()
 
 # MAGIC %md
 # MAGIC ## 3.9 - Balancing the classes  
-# MAGIC 
-# MAGIC As the unbalance is not that big, you can experiment running the algorithms without balancing as well
 
 # COMMAND ----------
 
-print(len(y_train[y_train == 0]))
-print(len(y_train[y_train == 1]))
+def inspect_balance(target):
+    class1 = len(target[y_train == 1])
+    class2 = len(target[y_train == 0])
+    print(f"Class 1: {class1:4d} ({class1/(class1+class2)*100:2.0f}%)")
+    print(f"Class 0: {class2:4d} ({class2/(class1+class2)*100:2.0f}%)")
+    print()
+
+inspect_balance(y_train)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC As the dataset is not too strongly unbalanced, one could experiment with running the algorithms without any balancing. However, we will oversample to improve the balance. 
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### 3.9.1 - Oversampling the minority class
+# MAGIC 
+# MAGIC For balancing our dataset, we use SMOTE (Synthetic Minority Over-sampling TEchnique).
 
 # COMMAND ----------
 
-# http://contrib.scikit-learn.org/imbalanced-learn/  
 from imblearn.over_sampling import SMOTE
-
-# COMMAND ----------
 
 smote = SMOTE(random_state=0)
 
@@ -658,14 +639,8 @@ X_train, y_train = smote.fit_resample(X_train, y_train)
 
 # COMMAND ----------
 
-print(X_train.shape)
-print(y_train.shape)
-print(len(y_train[y_train == 0]))
-print(len(y_train[y_train == 1]))
-print(X_test.shape)
-print(y_test.shape)
-print(len(y_test[y_test == 0]))
-print(len(y_test[y_test == 1]))
+inspect_balance(y_train)
+inspect_balance(y_test)
 
 # COMMAND ----------
 
@@ -703,12 +678,11 @@ register_spark()
 # MAGIC %md
 # MAGIC ## 4.2 - Creating Cross validation folds   
 # MAGIC This will make more precise the evaluation of the classifiers when doing grid search.  
-# MAGIC Bear in mind that this also affects the sample used for training, making the performance slighty worse than when using the whole dataset
-# MAGIC #https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection 
+# MAGIC Bear in mind that this also affects the sample used for training, making the performance slighty worse than when using the whole dataset.   
+# MAGIC https://scikit-learn.org/stable/modules/classes.html#module-sklearn.model_selection 
 
 # COMMAND ----------
 
-#cv = model_selection.StratifiedKFold(n_splits=10)
 cv = model_selection.KFold(n_splits=10)
 
 # COMMAND ----------
@@ -716,7 +690,7 @@ cv = model_selection.KFold(n_splits=10)
 # MAGIC %md
 # MAGIC ## 4.3 - Creating functions to evaluate the models
 # MAGIC 
-# MAGIC These functions can be put aside in a python file and imported, to make the code less cluttered
+# MAGIC The following functions can be put aside in a python file and imported, to make the code less cluttered.
 
 # COMMAND ----------
 
@@ -792,7 +766,7 @@ def clf_eval(clf, X, y_true, classes=['Perished', 'Survived']):
 # MAGIC %md
 # MAGIC ## 5.1 - Linear Classifiers
 # MAGIC 
-# MAGIC A linear classifier achieves this by making a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a feature vector. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
+# MAGIC A linear classifier achieves a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a *feature vector*. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
 
 # COMMAND ----------
 
@@ -817,69 +791,65 @@ from sklearn.linear_model import LogisticRegression
 
 # COMMAND ----------
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_lr = LogisticRegression(penalty='l2',
-# MAGIC                             dual=False, 
-# MAGIC                             tol=0.001, 
-# MAGIC                             C=0.10, 
-# MAGIC                             fit_intercept=True, 
-# MAGIC                             intercept_scaling=1, 
-# MAGIC                             class_weight=None, 
-# MAGIC                             random_state=0, 
-# MAGIC                             solver='saga', 
-# MAGIC                             max_iter=100, 
-# MAGIC                             multi_class='ovr', 
-# MAGIC                             verbose=0, 
-# MAGIC                             warm_start=False, 
-# MAGIC                             n_jobs=-1).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_lr = mean_scores_cv(clf_lr, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_lr}\n")
-# MAGIC 
-# MAGIC roc_lr = clf_eval(clf_lr, X_test, y_test)
+clf_lr = LogisticRegression(penalty='l2',
+                            dual=False, 
+                            tol=0.001, 
+                            C=0.10, 
+                            fit_intercept=True, 
+                            intercept_scaling=1, 
+                            class_weight=None, 
+                            random_state=0, 
+                            solver='saga', 
+                            max_iter=100, 
+                            multi_class='ovr', 
+                            verbose=0, 
+                            warm_start=False, 
+                            n_jobs=-1).fit(X_train, y_train)
+
+cv_lr = mean_scores_cv(clf_lr, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_lr}\n")
+
+roc_lr = clf_eval(clf_lr, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### 5.1.1.2 - Logistic Regression with Grid Search
 # MAGIC 
-# MAGIC For each model, we can also run with hyperparameter search for finding the best parameters
+# MAGIC For each model, we can also run a hyperparameter search to find the best parameters.
 
 # COMMAND ----------
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC estimator = LogisticRegression(dual=False, 
-# MAGIC                                penalty='l2',
-# MAGIC                                fit_intercept=True, 
-# MAGIC                                intercept_scaling=1, 
-# MAGIC                                class_weight=None, 
-# MAGIC                                random_state=0, 
-# MAGIC                                solver='saga', 
-# MAGIC                                multi_class='ovr', 
-# MAGIC                                verbose=0, 
-# MAGIC                                warm_start=False, 
-# MAGIC                                n_jobs=1)
-# MAGIC 
-# MAGIC Cs = np.linspace(0,1,10)
-# MAGIC max_iter = [10, 50, 100, 200]
-# MAGIC tol = [1e-5, 1e-4, 1e-3]
-# MAGIC fi = [True, False]
-# MAGIC param_grid=dict(C=Cs, max_iter=max_iter, tol=tol, fit_intercept=fi)
-# MAGIC 
-# MAGIC 
-# MAGIC clf_lr2 = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
-# MAGIC #clf_lr2 = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
-# MAGIC                                        estimator=estimator,
-# MAGIC                                        cv=cv,                                       ## using cross validation
-# MAGIC                                        n_jobs=1)
-# MAGIC clf_lr2.fit(X_train, y_train)
-# MAGIC 
-# MAGIC print(clf_lr2.best_score_)
-# MAGIC print(clf_lr2.best_estimator_.C)
-# MAGIC print(clf_lr2.best_estimator_.max_iter)
-# MAGIC print(clf_lr2.best_estimator_.tol)
+estimator = LogisticRegression(dual=False, 
+                               penalty='l2',
+                               fit_intercept=True, 
+                               intercept_scaling=1, 
+                               class_weight=None, 
+                               random_state=0, 
+                               solver='saga', 
+                               multi_class='ovr', 
+                               verbose=0, 
+                               warm_start=False, 
+                               n_jobs=1)
+
+Cs = np.linspace(0,1,10)
+max_iter = [10, 50, 100, 200]
+tol = [1e-5, 1e-4, 1e-3]
+fi = [True, False]
+param_grid=dict(C=Cs, max_iter=max_iter, tol=tol, fit_intercept=fi)
+
+
+clf_lr2 = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
+#clf_lr2 = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
+                                       estimator=estimator,
+                                       cv=cv,                                       ## using cross validation
+                                       n_jobs=1)
+clf_lr2.fit(X_train, y_train)
+
+print(clf_lr2.best_score_)
+print(clf_lr2.best_estimator_.C)
+print(clf_lr2.best_estimator_.max_iter)
+print(clf_lr2.best_estimator_.tol)
 
 # COMMAND ----------
 
@@ -902,9 +872,9 @@ print(coefs.sort_values(ascending = True))
 # MAGIC %md
 # MAGIC ### 5.1.1.4 -  Precision Recall Curve
 # MAGIC 
-# MAGIC This graph can be used for all classifiers that expose the probabilities of prediction for the classes:  
-# MAGIC For each person the classifier algorithm has to classify, it computes a probability based on a function  
-# MAGIC It classifies the person as survived (when the score is bigger than the threshold) or as not survived (when the score is smaller than the threshold).  
+# MAGIC The precision recall curve can be used for all classifiers that expose the probabilities of prediction for the classes.  
+# MAGIC For each person in the Titanic dataset the classifier algorithm has to classify, it computes a probability based on a specific function.  
+# MAGIC It then classifies the person either as survived or not survived, depending on wether the score given by the function is over or under some threshold.    
 # MAGIC That’s why the threshold plays an important part.  
 # MAGIC 
 # MAGIC We will plot the precision and recall while varying the threshold:
@@ -931,6 +901,8 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC The most balanced choice of threshold seems to lie around a value of 0.4. 
+# MAGIC 
 # MAGIC Another way to find the best balance is to plot the precision and recall against each other:
 
 # COMMAND ----------
@@ -951,31 +923,27 @@ plt.show()
 # MAGIC ### 5.1.2 - [Ridge Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html)  
 # MAGIC 
 # MAGIC Ridge Classifiers addresses some of the problems of Ordinary Least Squares by imposing a penalty on the size of coefficients.  
-# MAGIC The ridge coefficients minimize a penalized residual sum of squares  
+# MAGIC The ridge coefficients minimize a penalized residual sum of squares.  
 # MAGIC https://stats.stackexchange.com/questions/558900/why-ridgeclassifier-can-be-significantly-faster-than-logisticregression-with-a-h
 
 # COMMAND ----------
 
 from sklearn.linear_model import RidgeClassifier
 
-# COMMAND ----------
+clf_rdg = RidgeClassifier(alpha=1.0, 
+                          fit_intercept=True, 
+                          normalize=False, 
+                          copy_X=True, 
+                          max_iter=None, 
+                          tol=0.001, 
+                          class_weight=None, 
+                          solver='auto', 
+                          random_state=0).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_rdg = RidgeClassifier(alpha=1.0, 
-# MAGIC                           fit_intercept=True, 
-# MAGIC                           normalize=False, 
-# MAGIC                           copy_X=True, 
-# MAGIC                           max_iter=None, 
-# MAGIC                           tol=0.001, 
-# MAGIC                           class_weight=None, 
-# MAGIC                           solver='auto', 
-# MAGIC                           random_state=0).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_rdg = mean_scores_cv(clf_rdg, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_rdg}\n")
-# MAGIC 
-# MAGIC roc_rdg = clf_eval(clf_rdg, X_test, y_test)
+cv_rdg = mean_scores_cv(clf_rdg, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_rdg}\n")
+
+roc_rdg = clf_eval(clf_rdg, X_test, y_test)
 
 # COMMAND ----------
 
@@ -988,26 +956,22 @@ from sklearn.linear_model import RidgeClassifier
 
 from sklearn.linear_model import Perceptron
 
-# COMMAND ----------
+clf_pcp = Perceptron(penalty=None,
+                     alpha=0.001,
+                     fit_intercept=True,
+                     max_iter=230,
+                     shuffle=True,
+                     verbose=0,
+                     eta0=1.0,
+                     n_jobs=-1, 
+                     random_state=0, 
+                     class_weight=None, 
+                     warm_start=False).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_pcp = Perceptron(penalty=None,
-# MAGIC                      alpha=0.001,
-# MAGIC                      fit_intercept=True,
-# MAGIC                      max_iter=230,
-# MAGIC                      shuffle=True,
-# MAGIC                      verbose=0,
-# MAGIC                      eta0=1.0,
-# MAGIC                      n_jobs=-1, 
-# MAGIC                      random_state=0, 
-# MAGIC                      class_weight=None, 
-# MAGIC                      warm_start=False).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_pcp = mean_scores_cv(clf_pcp, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_pcp}\n")
-# MAGIC 
-# MAGIC roc_pcp = clf_eval(clf_pcp, X_test, y_test)
+cv_pcp = mean_scores_cv(clf_pcp, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_pcp}\n")
+
+roc_pcp = clf_eval(clf_pcp, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1016,40 +980,43 @@ from sklearn.linear_model import Perceptron
 # MAGIC 
 # MAGIC https://www.bonaccorso.eu/2017/10/06/ml-algorithms-addendum-passive-aggressive-algorithms/ 
 # MAGIC 
-# MAGIC Passive Aggressive Algorithms are a family of online learning algorithms (for both classification and regression) proposed by Crammer at al. The idea is very simple and their performance has been proofed to be superior to many other alternative methods like Online Perceptron and MIRA.  
-# MAGIC Passive: if correct classification, keep the model; Aggressive: if incorrect classification, update to adjust to this misclassified example. 
-# MAGIC In passive, the information hidden in the example is not enough for updating; in aggressive, the information shows that at lest this time you are wrong, a better model should modify this mistake.
+# MAGIC Passive Aggressive Algorithms are a family of online learning algorithms (for both classification and regression) proposed by Crammer at al. The idea is very simple and their performance has been proven to be superior to many other alternative methods like Online Perceptron and MIRA.  
+# MAGIC 
+# MAGIC **Passive**   
+# MAGIC If classification is correct, keep the model.
+# MAGIC 
+# MAGIC **Aggressive**   
+# MAGIC If classification is incorrect, update to adjust to this misclassified example. 
+# MAGIC 
+# MAGIC In passive, the information hidden in the example is not enough for updating; in aggressive, the information shows that at least this time you are wrong and a better model should modify this mistake.
 
 # COMMAND ----------
 
 from sklearn.linear_model import PassiveAggressiveClassifier
 
-# COMMAND ----------
+clf_pac = PassiveAggressiveClassifier(C=0.1, 
+                                      fit_intercept=True, 
+                                      max_iter=100, 
+                                      shuffle=True, 
+                                      verbose=0, 
+                                      loss='hinge', 
+                                      n_jobs=-1, 
+                                      random_state=0, 
+                                      warm_start=False, 
+                                      class_weight=None).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_pac = PassiveAggressiveClassifier(C=0.1, 
-# MAGIC                                       fit_intercept=True, 
-# MAGIC                                       max_iter=100, 
-# MAGIC                                       shuffle=True, 
-# MAGIC                                       verbose=0, 
-# MAGIC                                       loss='hinge', 
-# MAGIC                                       n_jobs=-1, 
-# MAGIC                                       random_state=0, 
-# MAGIC                                       warm_start=False, 
-# MAGIC                                       class_weight=None).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_pac = mean_scores_cv(clf_pac, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_pac}\n")
-# MAGIC 
-# MAGIC roc_pac = clf_eval(clf_pac, X_test, y_test)
+cv_pac = mean_scores_cv(clf_pac, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_pac}\n")
+
+roc_pac = clf_eval(clf_pac, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 5.1.5 - [SGDC Classifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)  
+# MAGIC ### 5.1.5 - [SGDClassifier](http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html)  
 # MAGIC 
-# MAGIC The SGDC classifier is a linear classifier (SVM, logistic regression) with SGD training. Implements regularized linear models with stochastic gradient descent (SGD) learning: the gradient of the loss is estimated each sample at a time and the model is updated along the way with a decreasing strength schedule (aka learning rate). SGD allows minibatch (online/out-of-core) learning, see the partial_fit method. For best results using the default learning rate schedule, the data should have zero mean and unit variance.  
+# MAGIC The SGD classifier is a linear classifier (such as SVM, logistic regression) with SGD training (Stochastic Gradient Descent):   
+# MAGIC The gradient of the loss is estimated each sample at a time and the model is updated along the way with a decreasing strength schedule (aka learning rate). SGD allows minibatch (online/out-of-core) learning (see the *partial_fit* method). For best results using the default learning rate schedule, the data should have zero mean and unit variance.  
 # MAGIC 
 # MAGIC The regularizer is a penalty added to the loss function that shrinks model parameters towards the zero vector using either the squared euclidean norm L2 or the absolute norm L1 or a combination of both (Elastic Net). If the parameter update crosses the 0.0 value because of the regularizer, the update is truncated to 0.0 to allow for learning sparse models and achieve online feature selection.
 
@@ -1057,32 +1024,28 @@ from sklearn.linear_model import PassiveAggressiveClassifier
 
 from sklearn.linear_model import SGDClassifier
 
-# COMMAND ----------
+clf_sgdc = SGDClassifier(loss='hinge',
+                         penalty='l2', 
+                         alpha=0.0001,
+                         l1_ratio=0.15, 
+                         fit_intercept=True,
+                         max_iter=200, 
+                         shuffle=True,
+                         verbose=0,
+                         epsilon=0.01,
+                         n_jobs=-1,
+                         random_state=0,
+                         learning_rate='optimal',
+                         eta0=0.0, 
+                         power_t=0.5,
+                         class_weight=None,
+                         warm_start=False, 
+                         average=False).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_sgdc = SGDClassifier(loss='hinge',
-# MAGIC                          penalty='l2', 
-# MAGIC                          alpha=0.0001,
-# MAGIC                          l1_ratio=0.15, 
-# MAGIC                          fit_intercept=True,
-# MAGIC                          max_iter=200, 
-# MAGIC                          shuffle=True,
-# MAGIC                          verbose=0,
-# MAGIC                          epsilon=0.01,
-# MAGIC                          n_jobs=-1,
-# MAGIC                          random_state=0,
-# MAGIC                          learning_rate='optimal',
-# MAGIC                          eta0=0.0, 
-# MAGIC                          power_t=0.5,
-# MAGIC                          class_weight=None,
-# MAGIC                          warm_start=False, 
-# MAGIC                          average=False).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_sgdc = mean_scores_cv(clf_sgdc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_sgdc}\n")
-# MAGIC 
-# MAGIC roc_sgdc = clf_eval(clf_sgdc, X_test, y_test)
+cv_sgdc = mean_scores_cv(clf_sgdc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_sgdc}\n")
+
+roc_sgdc = clf_eval(clf_sgdc, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1091,13 +1054,13 @@ from sklearn.linear_model import SGDClassifier
 # MAGIC 
 # MAGIC https://www.analyticsvidhya.com/blog/2021/10/support-vector-machinessvm-a-complete-guide-for-beginners/  
 # MAGIC 
-# MAGIC Support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other, making it a non-probabilistic binary linear classifier. An SVM model is a representation of the examples as points in space, mapped so that the examples of the separate categories are divided by a clear gap that is as wide as possible. New examples are then mapped into that same space and predicted to belong to a category based on which side of the gap they fall.
+# MAGIC Support vector machines (SVMs, also support vector networks) are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis. Given a set of binary training examples, an SVM training algorithm builds a model that assigns new observations to one category or the other, making it a non-probabilistic binary linear classifier. An SVM model is a representation of the observations as points in space, mapped so that the examples of the separate categories are divided by a clear gap that is as wide as possible. New examples are then mapped into that same space and predicted to belong to a category based on which side of the gap they fall.
 # MAGIC 
-# MAGIC In addition to performing linear classification, SVMs can efficiently perform a non-linear classification using what is called the kernel trick, implicitly mapping their inputs into high-dimensional feature spaces.
+# MAGIC In addition to performing linear classification, SVMs can efficiently perform a **non-linear classification** using what is called the kernel trick, implicitly mapping their inputs into high-dimensional feature spaces.
 # MAGIC 
-# MAGIC An SVM will find a hyperplane or a boundary between the two classes of data that maximizes. There are other planes as well which can separate the two classes, but only the SVM hyperplane can maximize the margin between the classes.
+# MAGIC An SVM will find the hyperplane or a boundary between the two classes of data that maximizes the margin between the two classes. 
 # MAGIC 
-# MAGIC B0 + (B1 * X1) + (B2 * X2) = 0 where, B1 and B2 determines the slope of the line and B0 (intercept) found by the learning algorithm. X1 and X2 are the two input variables.
+# MAGIC \\( B_0 + (B_1 * X_1) + (B_2 * X_2) = 0\\) where, \\(B_1\\) and \\(B_2\\) determines the slope of the line and \\(B_0\\) (intercept) found by the learning algorithm. \\(X_1\\) and\\( X_2\\) are the two input variables.
 # MAGIC 
 # MAGIC ![SVM](https://www.researchgate.net/publication/331308937/figure/fig1/AS:870140602249216@1584469094771/Illustration-of-support-vector-machine-SVM-to-generalize-the-optimal-separating.ppm)
 
@@ -1110,38 +1073,34 @@ from sklearn.linear_model import SGDClassifier
 
 from sklearn import svm
 
-# COMMAND ----------
+estimator = svm.SVC()
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC estimator = svm.SVC()
-# MAGIC 
-# MAGIC #kernels = ['linear', 'poly', 'rbf', 'sigmoid']
-# MAGIC kernels = ['poly', 'rbf']
-# MAGIC Cs = np.linspace(0.1,3,5)
-# MAGIC degrees = [2,3]
-# MAGIC gammas = np.logspace(-5, 0, 5)
-# MAGIC 
-# MAGIC #param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
-# MAGIC param_grid=dict(kernel=kernels, degree=degrees)
-# MAGIC 
-# MAGIC 
-# MAGIC clf_svc = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
-# MAGIC #clf_svc = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
-# MAGIC                                        estimator=estimator,
-# MAGIC                                        cv=cv,                                       ## using cross validation
-# MAGIC                                        #n_jobs=-1
-# MAGIC                                       )
-# MAGIC 
-# MAGIC #clf_svc.fit(X_train, y_train)
-# MAGIC with parallel_backend('spark', n_jobs=100):     #If we have a spark backend available https://github.com/joblib/joblib-spark
-# MAGIC     clf_svc.fit(X_train, y_train)
-# MAGIC 
-# MAGIC print(clf_svc.best_score_)
-# MAGIC print(clf_svc.best_estimator_.kernel)
-# MAGIC print(clf_svc.best_estimator_.C)
-# MAGIC print(clf_svc.best_estimator_.degree)
-# MAGIC print(clf_svc.best_estimator_.gamma)
+#kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+kernels = ['poly', 'rbf']
+Cs = np.linspace(0.1,3,5)
+degrees = [2,3]
+gammas = np.logspace(-5, 0, 5)
+
+#param_grid=dict(kernel=kernels, C=Cs, gamma=gammas, degree=degrees)
+param_grid=dict(kernel=kernels, degree=degrees)
+
+
+clf_svc = model_selection.GridSearchCV(param_grid=param_grid,                       ## Grid Search (more exhaustive)
+#clf_svc = model_selection.RandomizedSearchCV(param_distributions=param_grid,       ## Randomized (faster)
+                                       estimator=estimator,
+                                       cv=cv,                                       ## using cross validation
+                                       #n_jobs=-1
+                                      )
+
+#clf_svc.fit(X_train, y_train)
+with parallel_backend('spark', n_jobs=100):     #If we have a spark backend available https://github.com/joblib/joblib-spark
+    clf_svc.fit(X_train, y_train)
+
+print(clf_svc.best_score_)
+print(clf_svc.best_estimator_.kernel)
+print(clf_svc.best_estimator_.C)
+print(clf_svc.best_estimator_.degree)
+print(clf_svc.best_estimator_.gamma)
 
 # COMMAND ----------
 
@@ -1159,13 +1118,11 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 # MAGIC 
 # MAGIC + In k-NN classification, the output is a class membership. An object is classified by a majority vote of its neighbors, with the object being assigned to the class most common among its k nearest neighbors (k is a positive integer, typically small). If k = 1, then the object is simply assigned to the class of that single nearest neighbor.
 # MAGIC 
-# MAGIC + In k-NN regression, the output is the property value for the object. This value is the average of the values of its k nearest neighbors.
+# MAGIC + In k-NN regression, the output is the average of the values of its k nearest neighbors.
 # MAGIC 
 # MAGIC k-NN is a type of instance-based learning, or lazy learning, where the function is only approximated locally and all computation is deferred until classification. The k-NN algorithm is among the simplest of all machine learning algorithms.
 # MAGIC 
-# MAGIC It works by finding the distances between the new data point added and the points already existed in the two separate classes. Whatever class got the highest votes, the new data point belongs to that class.
-# MAGIC 
-# MAGIC EuclideanDistance(x, xi) = sqrt( sum( (xj — xij)² ) )
+# MAGIC It works by finding the distances between the new data point added and the points already existed in the two separate classes. Whatever class has majority, the new data point belongs to that class.
 # MAGIC 
 # MAGIC ![knn](https://miro.medium.com/max/1400/1*T8Pnw0kiVbrPGnqnB2I_Zw.jpeg)
 
@@ -1173,23 +1130,19 @@ roc_svc = clf_eval(clf_svc, X_test, y_test)
 
 from sklearn.neighbors import KNeighborsClassifier
 
-# COMMAND ----------
+clf_knn = KNeighborsClassifier(n_neighbors=25,
+                               weights='uniform', 
+                               algorithm='auto', 
+                               leaf_size=30, 
+                               p=4, 
+                               metric='minkowski', 
+                               metric_params=None, 
+                               n_jobs=-1).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_knn = KNeighborsClassifier(n_neighbors=25,
-# MAGIC                                weights='uniform', 
-# MAGIC                                algorithm='auto', 
-# MAGIC                                leaf_size=30, 
-# MAGIC                                p=4, 
-# MAGIC                                metric='minkowski', 
-# MAGIC                                metric_params=None, 
-# MAGIC                                n_jobs=-1).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_knn = mean_scores_cv(clf_knn, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_knn}\n")
-# MAGIC 
-# MAGIC roc_knn = clf_eval(clf_knn, X_test, y_test)
+cv_knn = mean_scores_cv(clf_knn, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_knn}\n")
+
+roc_knn = clf_eval(clf_knn, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1198,9 +1151,8 @@ from sklearn.neighbors import KNeighborsClassifier
 # MAGIC 
 # MAGIC Decision tree learning uses a decision tree (as a predictive model) to go from observations about an item (represented in the branches) to conclusions about the item's target value (represented in the leaves). Tree models where the target variable can take a discrete set of values are called classification trees; in these tree structures, leaves represent class labels and branches represent conjunctions of features that lead to those class labels. Decision trees where the target variable can take continuous values (typically real numbers) are called regression trees.
 # MAGIC 
-# MAGIC Decision tree algorithms are referred to as CART or Classification and Regression Trees. It is a flowchart like a tree structure, where each internal node denotes a test on an attribute, each branch represents an outcome of the test, and each leaf node (terminal node) holds a class label.
 # MAGIC 
-# MAGIC + A Gini score gives an idea of how good a split is by how mixed the response classes are in the groups created by the split.
+# MAGIC The **Gini score** gives an idea of how good a split is by how mixed the response classes are in the groups created by the split.
 # MAGIC 
 # MAGIC ![dtree](https://elf11.github.io/images/decisionTree.png)
 
@@ -1208,32 +1160,28 @@ from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.tree import DecisionTreeClassifier
 
-# COMMAND ----------
+clf_dtc = DecisionTreeClassifier(criterion='gini', 
+                                 splitter='best', 
+                                 max_depth=None, 
+                                 min_samples_split=3, 
+                                 min_samples_leaf=1, 
+                                 min_weight_fraction_leaf=0.0, 
+                                 max_features=None, 
+                                 random_state=0, 
+                                 max_leaf_nodes=None, 
+                                 class_weight=None,).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_dtc = DecisionTreeClassifier(criterion='gini', 
-# MAGIC                                  splitter='best', 
-# MAGIC                                  max_depth=None, 
-# MAGIC                                  min_samples_split=3, 
-# MAGIC                                  min_samples_leaf=1, 
-# MAGIC                                  min_weight_fraction_leaf=0.0, 
-# MAGIC                                  max_features=None, 
-# MAGIC                                  random_state=0, 
-# MAGIC                                  max_leaf_nodes=None, 
-# MAGIC                                  class_weight=None,).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_dtc = mean_scores_cv(clf_dtc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_dtc}\n")
-# MAGIC 
-# MAGIC roc_dtc = clf_eval(clf_dtc, X_test, y_test)
+cv_dtc = mean_scores_cv(clf_dtc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_dtc}\n")
+
+roc_dtc = clf_eval(clf_dtc, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## 5.4 - [Ensemble Classifiers](http://scikit-learn.org/stable/modules/ensemble.html)
 # MAGIC 
-# MAGIC A linear classifier achieves this by making a classification decision based on the value of a linear combination of the characteristics. An object's characteristics are also known as feature values and are typically presented to the machine in a vector called a feature vector. Such classifiers work well for practical problems such as document classification, and more generally for problems with many variables (features), reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
+# MAGIC An ensemble classifier works by combinding the predictions of several base estimators, often linear models. Such classifiers work well for practical problems such as document classification, and more generally for problems with many features, reaching accuracy levels comparable to non-linear classifiers while taking less time to train and use.
 # MAGIC 
 # MAGIC We have many type of ensembles: 
 # MAGIC + Bagging
@@ -1245,7 +1193,7 @@ from sklearn.tree import DecisionTreeClassifier
 # MAGIC %md
 # MAGIC ### 5.4.1 - Bagging
 # MAGIC 
-# MAGIC Bootstrap aggregating, also called bagging, is a machine learning ensemble meta-algorithm designed to improve the stability and accuracy of machine learning algorithms used in statistical classification and regression. It also reduces variance and helps to avoid overfitting. Although it is usually applied to decision tree methods, it can be used with any type of method. Bagging is a special case of the model averaging approach. Random Forests are the most common type of bagging algorithms.
+# MAGIC **Bootstrap aggregating**, also called **bagging**, is a machine learning ensemble meta-algorithm designed to improve the stability and accuracy of machine learning algorithms used in statistical classification and regression. It also reduces variance and helps to avoid overfitting. Although it is usually applied to decision tree methods, it can be used with any type of method. Bagging is a special case of the **model averaging approach**. Random Forests are the most common type of bagging algorithms.
 
 # COMMAND ----------
 
@@ -1262,37 +1210,37 @@ from sklearn.tree import DecisionTreeClassifier
 
 # COMMAND ----------
 
-from sklearn.ensemble import RandomForestClassifier
+
 
 # COMMAND ----------
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_rf = RandomForestClassifier(n_estimators=300, 
-# MAGIC                                 criterion='gini', 
-# MAGIC                                 max_depth=None, 
-# MAGIC                                 min_samples_split=3, #2,
-# MAGIC                                 min_samples_leaf=1, 
-# MAGIC                                 min_weight_fraction_leaf=0.0, 
-# MAGIC                                 max_features='sqrt', 
-# MAGIC                                 max_leaf_nodes=None, 
-# MAGIC                                 bootstrap=True, 
-# MAGIC                                 oob_score=False, 
-# MAGIC                                 n_jobs=-1, 
-# MAGIC                                 random_state=0, 
-# MAGIC                                 verbose=0, 
-# MAGIC                                 warm_start=False, 
-# MAGIC                                 class_weight=None).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_rf = mean_scores_cv(clf_rf, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_rf}\n")
-# MAGIC 
-# MAGIC roc_rf = clf_eval(clf_rf, X_test, y_test)
+from sklearn.ensemble import RandomForestClassifier
+
+clf_rf = RandomForestClassifier(n_estimators=300, 
+                                criterion='gini', 
+                                max_depth=None, 
+                                min_samples_split=3, #2,
+                                min_samples_leaf=1, 
+                                min_weight_fraction_leaf=0.0, 
+                                max_features='sqrt', 
+                                max_leaf_nodes=None, 
+                                bootstrap=True, 
+                                oob_score=False, 
+                                n_jobs=-1, 
+                                random_state=0, 
+                                verbose=0, 
+                                warm_start=False, 
+                                class_weight=None).fit(X_train, y_train)
+
+cv_rf = mean_scores_cv(clf_rf, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_rf}\n")
+
+roc_rf = clf_eval(clf_rf, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Assessing the importance of the features
+# MAGIC **Assessing the importance of the features**
 
 # COMMAND ----------
 
@@ -1311,52 +1259,49 @@ plt.show()
 # MAGIC %md
 # MAGIC #### 5.4.1.2 -  [Bagging Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingClassifier.html)   
 # MAGIC 
-# MAGIC A Bagging classifier is an ensemble meta-estimator that fits base classifiers each on random subsets of the original dataset and then aggregate their individual predictions (either by voting or by averaging) to form a final prediction. Such a meta-estimator can typically be used as a way to reduce the variance of a black-box estimator (e.g., a decision tree), by introducing randomization into its construction procedure and then making an ensemble out of it.
+# MAGIC A Bagging classifier is an ensemble meta-estimator that fits base classifiers each on random subsets of the original dataset and then aggregate their individual predictions (either by voting or by averaging) to form a final prediction. Such a meta-estimator can typically be used as a way to reduce the variance of a black-box estimator (e.g., a decision tree), by introducing randomization into its construction procedure and then creating an ensemble from it.
 
 # COMMAND ----------
 
 from sklearn.ensemble import BaggingClassifier
 
-# COMMAND ----------
+clf_bgc = BaggingClassifier(clf_lr).fit(X_train, y_train)   ## Using the previously fitted Logistic Regression
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_bgc = BaggingClassifier(clf_lr).fit(X_train, y_train)   ## Using the previously fitted Logistic Regression
-# MAGIC 
-# MAGIC cv_bgc = mean_scores_cv(clf_bgc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_bgc}\n")
-# MAGIC 
-# MAGIC roc_bgc = clf_eval(clf_bgc, X_test, y_test)
+cv_bgc = mean_scores_cv(clf_bgc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_bgc}\n")
+
+roc_bgc = clf_eval(clf_bgc, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC #### 5.4.1.3 - [Extra Trees Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html)
+# MAGIC 
+# MAGIC In extremely randomized trees, such as in random forests, a random subset of candidate features is used, but instead of looking for the most discriminative thresholds, thresholds are drawn at random for each candidate feature. The best of these randomly-generated thresholds is picked as the splitting rule. 
+# MAGIC This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
 
 # COMMAND ----------
 
 from sklearn.ensemble import ExtraTreesClassifier
 
-# COMMAND ----------
+clf_etc = ExtraTreesClassifier(n_estimators=300,
+                               max_depth=None,
+                               min_samples_split=3,
+                               random_state=0).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_etc = ExtraTreesClassifier(n_estimators=300,
-# MAGIC                                max_depth=None,
-# MAGIC                                min_samples_split=3,
-# MAGIC                                random_state=0).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_etc = mean_scores_cv(clf_etc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_etc}\n")
-# MAGIC 
-# MAGIC roc_etc = clf_eval(clf_etc, X_test, y_test)
+cv_etc = mean_scores_cv(clf_etc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_etc}\n")
+
+roc_etc = clf_eval(clf_etc, X_test, y_test)
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ### 5.4.2 - Boosting
 # MAGIC 
-# MAGIC Boosting is a machine learning ensemble meta-algorithm for primarily reducing bias, and also variance in supervised learning, and a family of machine learning algorithms that convert weak learners to strong ones. Boosting is based on the question posed by Kearns and Valiant (1988, 1989): Can a set of weak learners create a single strong learner? A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
+# MAGIC Boosting is a machine learning ensemble meta-algorithm primarily for reducing bias, and also variance in supervised learning. It describes a family of machine learning algorithms that convert weak learners to strong ones. 
+# MAGIC 
+# MAGIC A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
 
 # COMMAND ----------
 
@@ -1372,20 +1317,16 @@ from sklearn.ensemble import ExtraTreesClassifier
 
 from sklearn.ensemble import AdaBoostClassifier
 
-# COMMAND ----------
+clf_abc = AdaBoostClassifier(base_estimator=None,
+                             n_estimators=300,
+                             learning_rate=0.1,
+                             algorithm='SAMME.R',
+                             random_state=0).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_abc = AdaBoostClassifier(base_estimator=None,
-# MAGIC                              n_estimators=300,
-# MAGIC                              learning_rate=0.1,
-# MAGIC                              algorithm='SAMME.R',
-# MAGIC                              random_state=0).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_abc = mean_scores_cv(clf_abc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_abc}\n")
-# MAGIC 
-# MAGIC roc_abc = clf_eval(clf_abc, X_test, y_test)
+cv_abc = mean_scores_cv(clf_abc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_abc}\n")
+
+roc_abc = clf_eval(clf_abc, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1394,40 +1335,36 @@ from sklearn.ensemble import AdaBoostClassifier
 # MAGIC 
 # MAGIC Gradient Boost is also an ensemble algorithm that uses boosting methods to develop an enhanced predictor.
 # MAGIC 
-# MAGIC + Unlike AdaBoost which builds stumps, Gradient Boost builds trees with usually 8–32 leaves.
-# MAGIC + Gradient Boost views the boosting problem as an optimization problem, where it uses a loss function and tries to minimize the error. This is why it’s called Gradient boost, as it’s inspired by gradient descent.
+# MAGIC + Unlike AdaBoost, which builds stumps, Gradient Boost builds trees with usually 8–32 leaves.
+# MAGIC + Gradient Boost views the boosting problem as an optimization problem, where it uses a loss function and tries to minimize the error. This is why it’s called **Gradient boost, as it’s inspired by gradient descent.
 
 # COMMAND ----------
 
 from sklearn.ensemble import GradientBoostingClassifier
 
-# COMMAND ----------
-
-# MAGIC %time
-# MAGIC 
-# MAGIC clf_gbc = GradientBoostingClassifier(learning_rate=0.1,
-# MAGIC                                      n_estimators=100,
-# MAGIC                                      subsample=1.0,
-# MAGIC                                      criterion='friedman_mse',
-# MAGIC                                      min_samples_split=3, 
-# MAGIC                                      min_samples_leaf=1, 
-# MAGIC                                      min_weight_fraction_leaf=0.0, 
-# MAGIC                                      max_depth=3, 
-# MAGIC                                      init=None, 
-# MAGIC                                      random_state=0, 
-# MAGIC                                      max_features=None, 
-# MAGIC                                      verbose=0, 
-# MAGIC                                      max_leaf_nodes=None, 
-# MAGIC                                      warm_start=False,
-# MAGIC                                      validation_fraction=0.1, 
-# MAGIC                                      n_iter_no_change=None, 
-# MAGIC                                      tol=0.0001, 
-# MAGIC                                      ccp_alpha=0.0).fit(X_train, y_train)
-# MAGIC                                      
-# MAGIC cv_gbc = mean_scores_cv(clf_gbc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_gbc}\n")                                   
-# MAGIC                                      
-# MAGIC roc_gbc = clf_eval(clf_gbc, X_test, y_test)                                     
+clf_gbc = GradientBoostingClassifier(learning_rate=0.1,
+                                     n_estimators=100,
+                                     subsample=1.0,
+                                     criterion='friedman_mse',
+                                     min_samples_split=3, 
+                                     min_samples_leaf=1, 
+                                     min_weight_fraction_leaf=0.0, 
+                                     max_depth=3, 
+                                     init=None, 
+                                     random_state=0, 
+                                     max_features=None, 
+                                     verbose=0, 
+                                     max_leaf_nodes=None, 
+                                     warm_start=False,
+                                     validation_fraction=0.1, 
+                                     n_iter_no_change=None, 
+                                     tol=0.0001, 
+                                     ccp_alpha=0.0).fit(X_train, y_train)
+                                     
+cv_gbc = mean_scores_cv(clf_gbc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_gbc}\n")                                   
+                                     
+roc_gbc = clf_eval(clf_gbc, X_test, y_test)                                     
 
 # COMMAND ----------
 
@@ -1444,37 +1381,33 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 import xgboost
 
-# COMMAND ----------
+clf_xgb = xgboost.sklearn.XGBClassifier(base_score=0.5,
+                                        learning_rate=0.1,
+                                        n_estimators=250,
+                                        max_delta_step=0,
+                                        max_depth=2,
+                                        min_child_weight=1,
+                                        missing=1,
+                                        gamma=0.1,
+                                        subsample=1,
+                                        colsample_bylevel=1,
+                                        colsample_bytree=1,
+                                        objective= 'binary:logitraw',
+                                        #objective='multi:softprob',
+                                        eval_metric='auc',
+                                        #eval_metric='logloss',
+                                        reg_alpha=0, 
+                                        reg_lambda=1,
+                                        nthread=-1,
+                                        scale_pos_weight=1,
+                                        seed=0,
+                                        use_label_encoder=False,
+                                        random_state=0).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_xgb = xgboost.sklearn.XGBClassifier(base_score=0.5,
-# MAGIC                                         learning_rate=0.1,
-# MAGIC                                         n_estimators=250,
-# MAGIC                                         max_delta_step=0,
-# MAGIC                                         max_depth=2,
-# MAGIC                                         min_child_weight=1,
-# MAGIC                                         missing=1,
-# MAGIC                                         gamma=0.1,
-# MAGIC                                         subsample=1,
-# MAGIC                                         colsample_bylevel=1,
-# MAGIC                                         colsample_bytree=1,
-# MAGIC                                         objective= 'binary:logitraw',
-# MAGIC                                         #objective='multi:softprob',
-# MAGIC                                         eval_metric='auc',
-# MAGIC                                         #eval_metric='logloss',
-# MAGIC                                         reg_alpha=0, 
-# MAGIC                                         reg_lambda=1,
-# MAGIC                                         nthread=-1,
-# MAGIC                                         scale_pos_weight=1,
-# MAGIC                                         seed=0,
-# MAGIC                                         use_label_encoder=False,
-# MAGIC                                         random_state=0).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_xgb = mean_scores_cv(clf_xgb, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_xgb}\n")
-# MAGIC 
-# MAGIC roc_xgb = clf_eval(clf_xgb, X_test, y_test)
+cv_xgb = mean_scores_cv(clf_xgb, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_xgb}\n")
+
+roc_xgb = clf_eval(clf_xgb, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1489,52 +1422,48 @@ import xgboost
 
 import lightgbm as lgb
 
-# COMMAND ----------
+params = {'boosting_type': 'gbdt',
+          'max_depth' : -1,
+          'objective': 'binary',
+          'num_leaves': 64, 
+          'learning_rate': 0.05, 
+          'max_bin': 512, 
+          'subsample_for_bin': 200,
+          'subsample': 1, 
+          'subsample_freq': 1, 
+          'colsample_bytree': 0.8, 
+          'reg_alpha': 5, 
+          'reg_lambda': 10,
+          'min_split_gain': 0.15, 
+          'min_child_weight': 1, 
+          'min_child_samples': 5, 
+          'scale_pos_weight': 1,
+          'num_class' : 1,
+          'metric' : 'binary_error'}
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC params = {'boosting_type': 'gbdt',
-# MAGIC           'max_depth' : -1,
-# MAGIC           'objective': 'binary',
-# MAGIC           'num_leaves': 64, 
-# MAGIC           'learning_rate': 0.05, 
-# MAGIC           'max_bin': 512, 
-# MAGIC           'subsample_for_bin': 200,
-# MAGIC           'subsample': 1, 
-# MAGIC           'subsample_freq': 1, 
-# MAGIC           'colsample_bytree': 0.8, 
-# MAGIC           'reg_alpha': 5, 
-# MAGIC           'reg_lambda': 10,
-# MAGIC           'min_split_gain': 0.15, 
-# MAGIC           'min_child_weight': 1, 
-# MAGIC           'min_child_samples': 5, 
-# MAGIC           'scale_pos_weight': 1,
-# MAGIC           'num_class' : 1,
-# MAGIC           'metric' : 'binary_error'}
-# MAGIC 
-# MAGIC lgb_train = lgb.Dataset(X_train, y_train)
-# MAGIC lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-# MAGIC 
-# MAGIC clf_lgb = lgb.LGBMClassifier(boosting_type= 'gbdt',
-# MAGIC                              objective = 'binary',
-# MAGIC                              n_jobs = -1,
-# MAGIC                              max_depth = params['max_depth'],
-# MAGIC                              max_bin = params['max_bin'],
-# MAGIC                              subsample_for_bin = params['subsample_for_bin'],
-# MAGIC                              subsample = params['subsample'],
-# MAGIC                              subsample_freq = params['subsample_freq'],
-# MAGIC                              min_split_gain = params['min_split_gain'], 
-# MAGIC                              min_child_weight = params['min_child_weight'], 
-# MAGIC                              min_child_samples = params['min_child_samples'], 
-# MAGIC                              scale_pos_weight = params['scale_pos_weight'])
-# MAGIC 
-# MAGIC clf_lgb.fit(X_train, y_train)
-# MAGIC 
-# MAGIC 
-# MAGIC cv_lgb = mean_scores_cv(clf_lgb, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_lgb}\n")
-# MAGIC 
-# MAGIC roc_lgb = clf_eval(clf_lgb, X_test, y_test)
+lgb_train = lgb.Dataset(X_train, y_train)
+lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+clf_lgb = lgb.LGBMClassifier(boosting_type= 'gbdt',
+                             objective = 'binary',
+                             n_jobs = -1,
+                             max_depth = params['max_depth'],
+                             max_bin = params['max_bin'],
+                             subsample_for_bin = params['subsample_for_bin'],
+                             subsample = params['subsample'],
+                             subsample_freq = params['subsample_freq'],
+                             min_split_gain = params['min_split_gain'], 
+                             min_child_weight = params['min_child_weight'], 
+                             min_child_samples = params['min_child_samples'], 
+                             scale_pos_weight = params['scale_pos_weight'])
+
+clf_lgb.fit(X_train, y_train)
+
+
+cv_lgb = mean_scores_cv(clf_lgb, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_lgb}\n")
+
+roc_lgb = clf_eval(clf_lgb, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1544,10 +1473,7 @@ import lightgbm as lgb
 # COMMAND ----------
 
 from catboost import CatBoostClassifier
-
 #https://catboost.ai/en/docs/concepts/parameter-tuning
-
-# COMMAND ----------
 
 tmp_path = '/tmp'
 
@@ -1579,19 +1505,54 @@ roc_ctb = clf_eval(clf_ctb, X_test, y_test)
 
 from rgf.sklearn import RGFClassifier, FastRGFClassifier
 
+clf_rgf = RGFClassifier(max_leaf=100,
+                        algorithm="RGF_Sib",
+                        test_interval=60,
+                        verbose=False,).fit(X_train, y_train)
+
+cv_rgf = mean_scores_cv(clf_rgf, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_rgf}\n")
+
+roc_rgf = clf_eval(clf_rgf, X_test, y_test)
+
 # COMMAND ----------
 
-# MAGIC %%time
+# MAGIC %md
+# MAGIC ### 5.4.3 - [Voting / Stacking](http://scikit-learn.org/stable/modules/ensemble.html#votingclassifier)  
 # MAGIC 
-# MAGIC clf_rgf = RGFClassifier(max_leaf=100,
-# MAGIC                         algorithm="RGF_Sib",
-# MAGIC                         test_interval=60,
-# MAGIC                         verbose=False,).fit(X_train, y_train)
+# MAGIC https://medium.com/@satyam-kumar/use-voting-classifier-to-improve-the-performance-of-your-ml-model-805345f9de0e
 # MAGIC 
-# MAGIC cv_rgf = mean_scores_cv(clf_rgf, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_rgf}\n")
+# MAGIC Voting algorithms are simple strategies, where you aglomerate results of classifiers' decisions by for example taking the class which appears in most cases. 
 # MAGIC 
-# MAGIC roc_rgf = clf_eval(clf_rgf, X_test, y_test)
+# MAGIC Stacking/grading strategies are generalizations of this concept. Instead of simply saying "ok, I have a scheme v, which I will use to select the best answer among my k classifiers" you create another abstraction layer, where you actually learn to predict the correct label having k votes.
+
+# COMMAND ----------
+
+from sklearn.ensemble import VotingClassifier
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=RuntimeWarning)
+    ensemble = VotingClassifier(estimators=[('clf_sgdc', clf_sgdc),
+                                            ('clf_lgr', clf_lr),
+                                            ('clf_rdg', clf_rgf),
+                                            ('clf_bgc', clf_bgc),
+                                            ('clf_etc', clf_etc),
+                                            ('clf_abc', clf_abc),
+                                            ('clf_pct', clf_pcp),
+                                            ('clf_xgb', clf_xgb),
+                                            ('clf_rf', clf_rf),
+                                            ('clf_knn', clf_knn),
+                                            ('clf_rgf', clf_rgf),
+                                            ('clf_ctb', clf_ctb),
+                                            #('clf_tpot', clf_tpot),
+                                            ],
+                                voting='hard',
+                                weights=[1,1,1,1,1,1,1,1,1,1,1,1]).fit(X_train, y_train)
+
+cv_ens = mean_scores_cv(ensemble, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_ens}\n")
+    
+roc_ens = clf_eval(ensemble, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1610,19 +1571,15 @@ from rgf.sklearn import RGFClassifier, FastRGFClassifier
 
 from sklearn.naive_bayes import BernoulliNB
 
-# COMMAND ----------
+clf_bnb = BernoulliNB(alpha=0.20, 
+                     binarize=0.0, 
+                     fit_prior=True, 
+                     class_prior=None).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_bnb = BernoulliNB(alpha=0.20, 
-# MAGIC                      binarize=0.0, 
-# MAGIC                      fit_prior=True, 
-# MAGIC                      class_prior=None).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_bnb = mean_scores_cv(clf_bnb, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_bnb}\n")
-# MAGIC 
-# MAGIC roc_bnb = clf_eval(clf_bnb, X_test, y_test)
+cv_bnb = mean_scores_cv(clf_bnb, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_bnb}\n")
+
+roc_bnb = clf_eval(clf_bnb, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1637,24 +1594,20 @@ from sklearn.naive_bayes import BernoulliNB
 
 from sklearn.gaussian_process import GaussianProcessClassifier
 
-# COMMAND ----------
+clf_gpc = GaussianProcessClassifier(kernel=None, 
+                                    optimizer='fmin_l_bfgs_b', 
+                                    n_restarts_optimizer=0, 
+                                    max_iter_predict=100, 
+                                    warm_start=False, 
+                                    copy_X_train=True, 
+                                    random_state=0, 
+                                    multi_class='one_vs_rest', 
+                                    n_jobs=-1).fit(X_train, y_train)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC clf_gpc = GaussianProcessClassifier(kernel=None, 
-# MAGIC                                     optimizer='fmin_l_bfgs_b', 
-# MAGIC                                     n_restarts_optimizer=0, 
-# MAGIC                                     max_iter_predict=100, 
-# MAGIC                                     warm_start=False, 
-# MAGIC                                     copy_X_train=True, 
-# MAGIC                                     random_state=0, 
-# MAGIC                                     multi_class='one_vs_rest', 
-# MAGIC                                     n_jobs=-1).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_gpc = mean_scores_cv(clf_gpc, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_gpc}\n")
-# MAGIC 
-# MAGIC roc_gpc = clf_eval(clf_gpc, X_test, y_test)
+cv_gpc = mean_scores_cv(clf_gpc, cv, X_train, y_train)
+print(f"This is the cross validated score of the model: {cv_gpc}\n")
+
+roc_gpc = clf_eval(clf_gpc, X_test, y_test)
 
 # COMMAND ----------
 
@@ -1667,55 +1620,51 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 
 import tensorflow as tf
 
-# COMMAND ----------
+callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 
-# MAGIC %%time
-# MAGIC 
-# MAGIC callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
-# MAGIC 
-# MAGIC batch_size = int(len(X_train)/25)
-# MAGIC num_classes = 2
-# MAGIC epochs = 30
-# MAGIC np.random.seed(0)
-# MAGIC 
-# MAGIC model = tf.keras.Sequential()
-# MAGIC model.add(tf.keras.layers.Dense(input_dim=X_train.shape[1], units=20, activation='relu'))
-# MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=40, activation='relu'))
-# MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=20, activation='relu'))
-# MAGIC model.add(tf.keras.layers.Dropout(0.25))
-# MAGIC model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
-# MAGIC model.summary()
-# MAGIC 
-# MAGIC model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
-# MAGIC 
-# MAGIC history = model.fit(X_train, y_train,
-# MAGIC                     batch_size=batch_size,
-# MAGIC                     epochs=epochs,
-# MAGIC                     callbacks=[callback],
-# MAGIC                     verbose=0,
-# MAGIC                     shuffle=False,
-# MAGIC                     validation_split=0.2,
-# MAGIC                     #validation_data=(X_test, y_test)
-# MAGIC                    )
-# MAGIC 
-# MAGIC score = model.evaluate(X_test, y_test, verbose=0)
-# MAGIC print('Test loss:', score[0])
-# MAGIC print('Test accuracy:', score[1])
-# MAGIC 
-# MAGIC y_pred = (model.predict(X_test) > 0.5).astype("int32")
-# MAGIC 
-# MAGIC 
-# MAGIC clf_matrix = confusion_matrix(y_test, y_pred)
-# MAGIC print('Classification Report')
-# MAGIC print(classification_report(y_test, y_pred, target_names=['Perished', 'Survived']))
-# MAGIC print('ROC Score: {}'.format(roc_auc_score(y_test, y_pred)))
-# MAGIC print('Accuracy Score: {}'.format(accuracy_score(y_test, y_pred)))
-# MAGIC print('Average Precision Score: {}'.format(average_precision_score(y_test, y_pred)))
-# MAGIC print('f1 Score: {}'.format(f1_score(y_test, y_pred)))
-# MAGIC plot_confusion_matrix(clf_matrix, classes=['Perished', 'Survived'])
-# MAGIC roc_keras = roc_auc_score(y_test, y_pred)
+batch_size = int(len(X_train)/25)
+num_classes = 2
+epochs = 30
+np.random.seed(0)
+
+model = tf.keras.Sequential()
+model.add(tf.keras.layers.Dense(input_dim=X_train.shape[1], units=20, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.25))
+model.add(tf.keras.layers.Dense(units=40, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.25))
+model.add(tf.keras.layers.Dense(units=20, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.25))
+model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+model.summary()
+
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
+
+history = model.fit(X_train, y_train,
+                    batch_size=batch_size,
+                    epochs=epochs,
+                    callbacks=[callback],
+                    verbose=0,
+                    shuffle=False,
+                    validation_split=0.2,
+                    #validation_data=(X_test, y_test)
+                   )
+
+score = model.evaluate(X_test, y_test, verbose=0)
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])
+
+y_pred = (model.predict(X_test) > 0.5).astype("int32")
+
+
+clf_matrix = confusion_matrix(y_test, y_pred)
+print('Classification Report')
+print(classification_report(y_test, y_pred, target_names=['Perished', 'Survived']))
+print('ROC Score: {}'.format(roc_auc_score(y_test, y_pred)))
+print('Accuracy Score: {}'.format(accuracy_score(y_test, y_pred)))
+print('Average Precision Score: {}'.format(average_precision_score(y_test, y_pred)))
+print('f1 Score: {}'.format(f1_score(y_test, y_pred)))
+plot_confusion_matrix(clf_matrix, classes=['Perished', 'Survived'])
+roc_keras = roc_auc_score(y_test, y_pred)
 
 # COMMAND ----------
 
@@ -1750,6 +1699,12 @@ plt.show()
 
 # MAGIC %md
 # MAGIC ## 5.8 - AutoML / Genetic Algorithms
+# MAGIC 
+# MAGIC **Automated Machine Learning** is a technology to automate machine learning tasks, help data scientists focus on higher value duties, and improve the accuracy of ML models. 
+# MAGIC Basically, AutoML automatically selects the model algorithm, hyperparameter optimization, models by iterations, and model evaluation.   
+# MAGIC This technology doesn’t substitute data scientists but frees them from repetitive tasks.
+# MAGIC 
+# MAGIC A **genetic algorithm** is an adaptive heuristic search algorithm used to solve optimization problems in machine learning. It helps solve complex problems that would otherwise take a long time to solve.
 
 # COMMAND ----------
 
@@ -1762,8 +1717,6 @@ plt.show()
 
 from tpot import TPOTClassifier
 
-# COMMAND ----------
-
 mlflow.autolog(disable=True)
 
 clf_tpot = TPOTClassifier(verbosity=1, 
@@ -1774,9 +1727,6 @@ clf_tpot = TPOTClassifier(verbosity=1,
                           n_jobs=-1)
 
 clf_tpot.fit(X_train, y_train)
-
-#cv_tpot = mean_scores_cv(clf_tpot, cv, X_train, y_train)
-#print(f"This is the cross validated score of the model: {cv_tpot}\n")
 
 roc_tpot = clf_eval(clf_tpot, X_test, y_test)
 
@@ -1793,52 +1743,9 @@ mlflow.autolog(disable=False)
 
 # COMMAND ----------
 
-#from pycaret.classification import *
-#s = setup(pd.concat([X_train, y_train], axis=1), target="Survived")
-#best = compare_models()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 5.4.3 - [Voting / Stacking](http://scikit-learn.org/stable/modules/ensemble.html#votingclassifier)  
-# MAGIC 
-# MAGIC https://medium.com/@satyam-kumar/use-voting-classifier-to-improve-the-performance-of-your-ml-model-805345f9de0e
-# MAGIC 
-# MAGIC Voting algorithms are simple strategies, where you aglomerate results of classifiers' decisions by for example taking the class which appears in most cases. 
-# MAGIC 
-# MAGIC Stacking/grading strategies are generalizations of this concept. Instead of simply saying "ok, I have a scheme v, which I will use to select the best answer among my k classifiers" you create another abstraction layer, where you actually learn to predict the correct label having k votes.
-
-# COMMAND ----------
-
-from sklearn.ensemble import VotingClassifier
-
-# COMMAND ----------
-
-# MAGIC %%time
-# MAGIC 
-# MAGIC with warnings.catch_warnings():
-# MAGIC     warnings.simplefilter("ignore", category=RuntimeWarning)
-# MAGIC     ensemble = VotingClassifier(estimators=[('clf_sgdc', clf_sgdc),
-# MAGIC                                             ('clf_lgr', clf_lr),
-# MAGIC                                             ('clf_rdg', clf_rgf),
-# MAGIC                                             ('clf_bgc', clf_bgc),
-# MAGIC                                             ('clf_etc', clf_etc),
-# MAGIC                                             ('clf_abc', clf_abc),
-# MAGIC                                             ('clf_pct', clf_pcp),
-# MAGIC                                             ('clf_xgb', clf_xgb),
-# MAGIC                                             ('clf_rf', clf_rf),
-# MAGIC                                             ('clf_knn', clf_knn),
-# MAGIC                                             ('clf_rgf', clf_rgf),
-# MAGIC                                             ('clf_ctb', clf_ctb),
-# MAGIC                                             #('clf_tpot', clf_tpot),
-# MAGIC                                             ],
-# MAGIC                                 voting='hard',
-# MAGIC                                 weights=[1,1,1,1,1,1,1,1,1,1,1,1]).fit(X_train, y_train)
-# MAGIC 
-# MAGIC cv_ens = mean_scores_cv(ensemble, cv, X_train, y_train)
-# MAGIC print(f"This is the cross validated score of the model: {cv_ens}\n")
-# MAGIC     
-# MAGIC roc_ens = clf_eval(ensemble, X_test, y_test)
+# from pycaret.classification import *
+# s = setup(pd.concat([X_train, y_train], axis=1), target="Survived")
+# best = compare_models()
 
 # COMMAND ----------
 
@@ -2056,12 +1963,11 @@ def plot_learning_curve(estimator,
 
 # COMMAND ----------
 
-# MAGIC %%time
-# MAGIC title = f'''Learning Curves (Random Forest, 
-# MAGIC Estimators:{clf_rfo.best_estimator_.n_estimators},
-# MAGIC Max Depth:{clf_rfo.best_estimator_.max_depth},
-# MAGIC Min Samples Split:{clf_rfo.best_estimator_.min_samples_split},
-# MAGIC Min Samples Leaf:{clf_rfo.best_estimator_.min_samples_leaf},
-# MAGIC Criterion:{clf_rfo.best_estimator_.criterion})'''
-# MAGIC graph = plot_learning_curve(clf_rfo, title, X_train, y_train, cv=cv)
-# MAGIC graph.show()
+title = f'''Learning Curves (Random Forest, 
+Estimators:{clf_rfo.best_estimator_.n_estimators},
+Max Depth:{clf_rfo.best_estimator_.max_depth},
+Min Samples Split:{clf_rfo.best_estimator_.min_samples_split},
+Min Samples Leaf:{clf_rfo.best_estimator_.min_samples_leaf},
+Criterion:{clf_rfo.best_estimator_.criterion})'''
+graph = plot_learning_curve(clf_rfo, title, X_train, y_train, cv=cv)
+graph.show()

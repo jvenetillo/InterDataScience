@@ -1,9 +1,9 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC <h1 style="color:rgb(0,120,170)">Neural Networks and Deep Learning</h1>
-# MAGIC <h2 style="color:rgb(0,120,170)">Intro to Tensor Flow and Keras - optimization</h2>
+# MAGIC # Neural Networks and Deep Learning
+# MAGIC ## Intro to Tensor Flow and Keras - optimization
 # MAGIC 
-# MAGIC Based in [this](https://www.kaggle.com/ryanholbrook/a-single-neuron) post
+# MAGIC Based in this [Intro to Deep Learning](https://www.kaggle.com/learn/intro-to-deep-learning) course. 
 
 # COMMAND ----------
 
@@ -43,15 +43,85 @@ from IPython.core.display import HTML
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### [What is Deep Learning](https://www.kaggle.com/ryanholbrook/)?
+# MAGIC ## 1 - The Datasets
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 1.1 - Cereal
+# MAGIC 
+# MAGIC The [80 Cereals data set](https://www.kaggle.com/datasets/crawford/80-cereals) contains information about different popular cereal brands and their nutritional contents. 
+# MAGIC 
+# MAGIC #### Content
+# MAGIC Fields in the dataset:
+# MAGIC 
+# MAGIC - Name: Name of cereal
+# MAGIC - mfr: Manufacturer of cereal
+# MAGIC   - A = American Home Food Products;
+# MAGIC   - G = General Mills
+# MAGIC   - K = Kelloggs
+# MAGIC   - N = Nabisco
+# MAGIC   - P = Post
+# MAGIC   - Q = Quaker Oats
+# MAGIC   - R = Ralston Purina
+# MAGIC - type:
+# MAGIC   - cold
+# MAGIC   - hot
+# MAGIC - calories: calories per serving
+# MAGIC - protein: grams of protein
+# MAGIC - fat: grams of fat
+# MAGIC - sodium: milligrams of sodium
+# MAGIC - fiber: grams of dietary fiber
+# MAGIC - carbo: grams of complex carbohydrates
+# MAGIC - sugars: grams of sugars
+# MAGIC - potass: milligrams of potassium
+# MAGIC - vitamins: vitamins and minerals - 0, 25, or 100, indicating the typical percentage of FDA recommended
+# MAGIC - shelf: display shelf (1, 2, or 3, counting from the floor)
+# MAGIC - weight: weight in ounces of one serving
+# MAGIC - cups: number of cups in one serving
+# MAGIC - rating: a rating of the cereals (Possibly from Consumer Reports?)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 1.2 - Red Wine Quality
+# MAGIC 
+# MAGIC The [Red Wine Quality data set](https://www.kaggle.com/datasets/uciml/red-wine-quality-cortez-et-al-2009) shows properties of different variants of the Portuguese "Vinho Verde" wine. Is consists of physiochemical measurements from about 1600 Portuguese red wines.  Also included is a quality rating for each wine from blind taste-tests. 
+# MAGIC These datasets can be viewed as classification or regression tasks. The classes are ordered and not balanced (e.g. there are much more normal wines than excellent or poor ones).
+# MAGIC 
+# MAGIC #### Content
+# MAGIC Input variables (based on physicochemical tests):
+# MAGIC - 1 - fixed acidity
+# MAGIC - 2 - volatile acidity
+# MAGIC - 3 - citric acid
+# MAGIC - 4 - residual sugar
+# MAGIC - 5 - chlorides
+# MAGIC - 6 - free sulfur dioxide
+# MAGIC - 7 - total sulfur dioxide
+# MAGIC - 8 - density
+# MAGIC - 9 - pH
+# MAGIC - 10 - sulphates
+# MAGIC - 11 - alcohol
+# MAGIC Output variable (based on sensory data):
+# MAGIC - 12 - quality (score between 0 and 10)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 2 - What is Deep Learning?
 # MAGIC 
 # MAGIC Some of the most impressive advances in artificial intelligence in recent years have been in the field of deep learning. Natural language translation, image recognition, and game playing are all tasks where deep learning models have neared or even exceeded human-level performance.
 # MAGIC 
 # MAGIC So what is deep learning? Deep learning is an approach to machine learning characterized by deep stacks of computations. This depth of computation is what has enabled deep learning models to disentangle the kinds of complex and hierarchical patterns found in the most challenging real-world datasets.
 # MAGIC 
-# MAGIC Through their power and scalability neural networks have become the defining model of deep learning. Neural networks are composed of neurons, where each neuron individually performs only a simple computation. The power of a neural network comes instead from the complexity of the connections these neurons can form.
-# MAGIC 
-# MAGIC ### The Linear Unit
+# MAGIC Through their power and scalability neural networks have become the defining model of deep learning. Neural networks are composed of **neurons**, where each neuron individually performs only a **simple computation**. The power of a neural network comes instead from the **complexity of the connections** these neurons can form.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3 - The Linear Unit
+# MAGIC Let's begin with the fundamental component of a neural network: the individual neuron.   
+# MAGIC As a diagram, a neuron (or unit) with one input looks like:
 
 # COMMAND ----------
 
@@ -60,20 +130,19 @@ Image("./images/mfOlDR6.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The input is x. Its connection to the neuron has a weight which is w. Whenever a value flows through a connection, you multiply the value by the connection's weight. For the input x, what reaches the neuron is w * x. A neural network "learns" by modifying its weights.
+# MAGIC ### 3.1 - The Linear Unit as a Model
+# MAGIC The input to the neuron is \\(x\\). Its connection to the neuron has a **weight** \\(w\\). Whenever a value flows through a connection, you multiply the value by the connection's weight. For the input x, what reaches the neuron is \\(w \cdot x\\). A neural network "learns" by **modifying its weights**.   
+# MAGIC The \\(b\\) is a special kind of weight we call the **bias**. The bias doesn't have any input data associated with it; instead, we put a 1 in the diagram so that the value that reaches the neuron is just \\(b\\) (since \\(1 \cdot b = b\\)). The bias enables the neuron to modify the output independently of its inputs.
 # MAGIC 
-# MAGIC The b is a special kind of weight we call the bias. The bias doesn't have any input data associated with it; instead, we put a 1 in the diagram so that the value that reaches the neuron is just b (since 1 * b = b). The bias enables the neuron to modify the output independently of its inputs.
+# MAGIC The \\(y\\) is the value the neuron ultimately **outputs**. To get the output, the neuron sums up all the values it receives through its connections. This neuron's activation is \\(y = w \cdot x + b\\), or as a formula \\(y=w\cdot x+b\\).   
+# MAGIC Does the formula \\(y=wx+b\\) look familiar?
+# MAGIC It's the equation of a line! It's the slope-intercept equation, where \\(w\\) is the slope and \\(b\\) is the \\(y\\)-intercept. 
 # MAGIC 
-# MAGIC The y is the value the neuron ultimately outputs. To get the output, the neuron sums up all the values it receives through its connections. This neuron's activation is \\(y = w * x + b\\), or as a formula \\(y=wx+b\\)
 # MAGIC 
-# MAGIC Does the formula \\(y=wx+b\\( look familiar?
-# MAGIC It's an equation of a line! It's the slope-intercept equation, where w is the slope and b is the y-intercept. 
 # MAGIC 
-# MAGIC ### The Linear Unit as a Model
+# MAGIC Though individual neurons will usually function as part of a **larger network**, it's often useful to start with a **single neuron model** as a baseline. Single neuron models are linear models.
 # MAGIC 
-# MAGIC Though individual neurons will usually only function as part of a larger network, it's often useful to start with a single neuron model as a baseline. Single neuron models are linear models.
-# MAGIC 
-# MAGIC Let's think about how this might work on a dataset like [80 Cereals](https://www.kaggle.com/crawford/80-cereals). Training a model with 'sugars' (grams of sugars per serving) as input and 'calories' (calories per serving) as output, we might find the bias is $b=90$ and the weight is $w=2.5$. We could estimate the calorie content of a cereal with 5 grams of sugar per serving like this:
+# MAGIC Let's think about how this might work on a data set like [80 Cereals](https://www.kaggle.com/crawford/80-cereals). Training a model with 'sugars' (grams of sugars per serving) as input and 'calories' (calories per serving) as output, we might find the bias is \\(b=90\\) and the weight is \\(w=2.5\\). We could estimate the calorie content of a cereal with 5 grams of sugar per serving like this:
 
 # COMMAND ----------
 
@@ -82,10 +151,13 @@ Image("./images/yjsfFvY.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC And, checking against our formula, we have calories=\\(2.5×5+90=102.5\\), just like we expect.
+# MAGIC And, checking against our formula, we have calories = \\(2.5 \cdot 5+90=102.5\\), just like we expect.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC 
-# MAGIC 
-# MAGIC ### Multiple Inputs
+# MAGIC ### 3.2 - Multiple Inputs
 # MAGIC 
 # MAGIC The 80 Cereals dataset has many more features than just 'sugars'. What if we wanted to expand our model to include things like fiber or protein content? That's easy enough. We can just add more input connections to the neuron, one for each additional feature. To find the output, we would multiply each input to its connection weight and then add them all together.
 
@@ -96,14 +168,16 @@ Image("./images/vyXSnlZ.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The formula for this neuron would be \\(y=w_0x_0+w_1x_1+w_2x_2+b\\)
+# MAGIC The formula for this neuron would be \\(y=w_0x_0+w_1x_1+w_2x_2+b\\).
 # MAGIC 
 # MAGIC A linear unit with two inputs will fit a plane, and a unit with more inputs than that will fit a hyperplane.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 3.3 - Linear Units in Keras
 # MAGIC 
-# MAGIC 
-# MAGIC ### Linear Units in Keras
-# MAGIC 
-# MAGIC The easiest way to create a model in Keras is through keras.Sequential, which creates a neural network as a stack of layers. We can create models like those above using a dense layer (which we'll learn more about in the next lesson).
+# MAGIC The easiest way to create a (sequential) model in Keras is through `keras.Sequential`, which creates a neural network as a stack of layers. We can create models like those above using a dense layer (which we'll learn more about later).
 # MAGIC 
 # MAGIC We could define a linear model accepting three input features ('sugars', 'fiber', and 'protein') and producing a single output ('calories') like so:
 
@@ -115,9 +189,8 @@ model = keras.Sequential([layers.Dense(units=1, input_shape=[3])])
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The *Red Wine Quality* dataset consists of physiochemical measurements from about 1600 Portuguese red wines.  Also included is a quality rating for each wine from blind taste-tests. 
-# MAGIC 
-# MAGIC First, run the next cell to display the first few rows of this dataset.
+# MAGIC For our first model we will use the *Red Wine Quality* data set.   
+# MAGIC Let's first start by taking a look at the first few rows of the data set. 
 
 # COMMAND ----------
 
@@ -127,31 +200,19 @@ red_wine.head()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC You can get the number of rows and columns of a dataframe (or a Numpy array) with the `shape` attribute.
-
-# COMMAND ----------
-
-red_wine.shape # (rows, columns)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Input shape #
-# MAGIC 
 # MAGIC How well can we predict a wine's perceived quality from the physiochemical measurements?  
-# MAGIC 
-# MAGIC The target is `'quality'`, and the remaining columns are the features.  How would you set the `input_shape` parameter for a Keras model on this task?
+# MAGIC The target is `'quality'`, and the remaining columns are the features.  
 
 # COMMAND ----------
 
-input_shape = [11]
+input_shape = [red_wine.shape[1]-1]
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Define a linear model
+# MAGIC ## 4 - Creating a new model for Regression
 # MAGIC 
-# MAGIC Now define a linear model appropriate for this task. Pay attention to how many inputs and outputs the model should have.
+# MAGIC Now define a linear model appropriate for this task. Pay attention to **how many inputs and outputs** the model should have.
 
 # COMMAND ----------
 
@@ -160,29 +221,28 @@ model = keras.Sequential([layers.Dense(units=1, input_shape=input_shape)])
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Look at the weights
+# MAGIC ### 4.1 - Weights
 # MAGIC 
-# MAGIC Internally, Keras represents the weights of a neural network with **tensors**. Tensors are basically TensorFlow's version of a Numpy array with a few differences that make them better suited to deep learning. One of the most important is that tensors are compatible with [GPU](https://www.kaggle.com/docs/efficient-gpu-usage) and [TPU](https://www.kaggle.com/docs/tpu)) accelerators. TPUs, in fact, are designed specifically for tensor computations.
+# MAGIC Internally, Keras represents the weights of a neural network with **tensors**. Tensors are basically TensorFlow's version of a Numpy array with a few differences that make them better suited to deep learning. One of the most important differences is that tensors are compatible with [GPU](https://www.kaggle.com/docs/efficient-gpu-usage) and [TPU](https://www.kaggle.com/docs/tpu) accelerators. TPUs, in fact, are designed specifically for tensor computations.
 # MAGIC 
-# MAGIC A model's weights are kept in its `weights` attribute as a list of tensors. Get the weights of the model you defined above. (If you want, you could display the weights with something like: `print("Weights\n{}\n\nBias\n{}".format(w, b))`).
+# MAGIC A model's weights are kept in its `weights` attribute as a list of tensors. 
 
 # COMMAND ----------
 
 w, b = model.weights
-
-# COMMAND ----------
-
-print("Weights\n{}\n\nBias\n{}".format(w, b))
+print(f"Weights\n{w.numpy()}\n\nBias\n{b.numpy()}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC (By the way, Keras represents weights as tensors, but also uses tensors to represent data. When you set the `input_shape` argument, you are telling Keras the dimensions of the array it should expect for each example in the training data. Setting `input_shape=[3]` would create a network accepting vectors of length 3, like `[0.2, 0.4, 0.6]`.)
+# MAGIC Keras represents weights as tensors, but also uses tensors to represent data. When you set the `input_shape` argument, you are telling Keras the dimensions of the array it should expect for each example in the training data. Setting `input_shape=[3]` would create a network accepting vectors of length 3, like `[0.2, 0.4, 0.6]`.
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC ### 4.2 - Untrained linear model
 # MAGIC  
-# MAGIC 
-# MAGIC ### Plot the output of an untrained linear model
-# MAGIC  
-# MAGIC The kinds of problems we'll work on will be *regression* problems, where the goal is to predict some numeric target. Regression problems are like "curve-fitting" problems: we're trying to find a curve that best fits the data. Let's take a look at the "curve" produced by a linear model. (You've probably guessed that it's a line!)
+# MAGIC We will work on *regression* problems, where the goal is to predict some numeric target. Regression problems are like "curve-fitting" problems: we're trying to find a curve that best fits the data. Let's take a look at the "curve" produced by a linear model. 
 # MAGIC  
 # MAGIC We mentioned that before training a model's weights are set randomly. Run the cell below a few times to see the different lines produced with a random initialization.
 
@@ -209,9 +269,10 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Layers
+# MAGIC ### 4.3 - Layers
 # MAGIC 
-# MAGIC Neural networks typically organize their neurons into layers. When we collect together linear units having a common set of inputs we get a dense layer.
+# MAGIC Neural networks typically organize their neurons into layers.   
+# MAGIC When we **collect linear units** having a common set of inputs we get a **dense layer**.
 
 # COMMAND ----------
 
@@ -220,15 +281,26 @@ Image("./images/2MA4iMV.png")
 # COMMAND ----------
 
 # MAGIC %md
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 4.3.1 - Many Kinds of Layers
+# MAGIC     
 # MAGIC You could think of each layer in a neural network as performing some kind of relatively simple transformation. Through a deep stack of layers, a neural network can transform its inputs in more and more complex ways. In a well-trained neural network, each layer is a transformation getting us a little bit closer to a solution.
 # MAGIC 
-# MAGIC ### Many Kinds of Layers
-# MAGIC     
-# MAGIC A "layer" in Keras is a very general kind of thing. A layer can be, essentially, any kind of data transformation. Many layers, like the convolutional and recurrent layers, transform data through use of neurons and differ primarily in the pattern of connections they form. Others though are used for feature engineering or just simple arithmetic. There's a whole world of layers to discover -- check them out! 
+# MAGIC A "layer" in Keras is a very general kind of thing. A layer can be, essentially, any kind of data transformation. Many layers, like the convolutional and recurrent layers, transform data through use of neurons and differ primarily in the pattern of connections they form. Others are used for feature engineering or just simple arithmetic. 
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC 
-# MAGIC ### The Activation Function
+# MAGIC #### 4.3.2 - The Activation Function
 # MAGIC 
-# MAGIC It turns out, however, that two dense layers with nothing in between are no better than a single dense layer by itself. Dense layers by themselves can never move us out of the world of lines and planes. What we need is something nonlinear. What we need are activation functions.
+# MAGIC It turns out, however, that two dense layers with nothing in between are no better than a single dense layer by itself.   
+# MAGIC Dense layers by themselves can never move us out of the world of lines and planes.   
+# MAGIC What we need is something **nonlinear**.    
+# MAGIC What we need are **activation functions**.
 
 # COMMAND ----------
 
@@ -239,7 +311,8 @@ Image("./images/OLSUEYT.png")
 # MAGIC %md
 # MAGIC Without activation functions, neural networks can only learn linear relationships. In order to fit curves, we'll need to use activation functions.
 # MAGIC 
-# MAGIC An activation function is simply some function we apply to each of a layer's outputs (its activations). The most common is the rectifier function max(0,x). 
+# MAGIC An activation function is simply some function we apply to each of a layer's outputs (its activations).   
+# MAGIC The most common is the rectifier function \\(max(0,x)\\). 
 
 # COMMAND ----------
 
@@ -248,9 +321,10 @@ Image("./images/aeIyAlF.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The rectifier function has a graph that's a line with the negative part "rectified" to zero. Applying the function to the outputs of a neuron will put a bend in the data, moving us away from simple lines.
+# MAGIC The rectifier function has a graph that's a line with the negative part "rectified" to zero.   
+# MAGIC Applying the function to the outputs of a neuron will "bend" the data, moving us away from simple lines.
 # MAGIC 
-# MAGIC When we attach the rectifier to a linear unit, we get a rectified linear unit or ReLU. (For this reason, it's common to call the rectifier function the "ReLU function".) Applying a ReLU activation to a linear unit means the output becomes $max(0, w * x + b)$, which we might draw in a diagram like:
+# MAGIC When we attach the rectifier to a linear unit, we get a **rectified linear unit** or **ReLU**. (For this reason, it's common to call the rectifier function the "ReLU function".) Applying a ReLU activation to a linear unit means the output becomes \\(max(0, w \cdot x + b)\\), which we might draw in a diagram like:
 
 # COMMAND ----------
 
@@ -259,9 +333,7 @@ Image("./images/eFry7Yu.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC A rectified linear unit.
-# MAGIC 
-# MAGIC ### Stacking Dense Layers
+# MAGIC #### 4.3.3 - Stacking Dense Layers
 # MAGIC 
 # MAGIC Now that we have some nonlinearity, let's see how we can stack layers to get complex data transformations.
 
@@ -274,34 +346,41 @@ Image("./images/Y5iwFQZ.png")
 # MAGIC %md
 # MAGIC A stack of dense layers makes a "fully-connected" network.
 # MAGIC 
-# MAGIC The layers before the output layer are sometimes called hidden since we never see their outputs directly. And though we haven't shown them in this diagram each of these neurons would also be receiving a bias (one bias for each neuron).
+# MAGIC The layers before the output layer are sometimes called **hidden** since we **never see their outputs** directly.   
+# MAGIC Though we haven't shown them in this diagram, each of these neurons would also be receiving a bias (one bias for each neuron).
 # MAGIC 
-# MAGIC Now, notice that the final (output) layer is a linear unit (meaning, no activation function). That makes this network appropriate to a regression task, where we are trying to predict some arbitrary numeric value. Other tasks (like classification) might require an activation function on the output.
-# MAGIC 
-# MAGIC ### Building Sequential Models
-# MAGIC 
-# MAGIC The Sequential model we've been using will connect together a list of layers in order from first to last: the first layer gets the input, the last layer produces the output. This creates the model in the figure above:
+# MAGIC Now, notice that the **final (output) layer is a linear unit** (meaning, no activation function).   
+# MAGIC That makes this network appropriate to a regression task, where we are trying to predict some arbitrary numeric value.   
+# MAGIC Other tasks (like classification) might **require an activation function** on the output.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC if you by chance need to reset your model waights after running it, there is a hint:  
-# MAGIC https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer
+# MAGIC The sequential model we've been using will connect a list of layers in order from first to last: 
+# MAGIC - The first layer gets the input
+# MAGIC - The last layer produces the output. 
+# MAGIC 
+# MAGIC This creates the model in the figure above.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC If you by chance need to reset your model waights after running it, this can be done with the following function, which is explained [here](https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer).
 
 # COMMAND ----------
 
 def reset_model(model):
     for ix, layer in enumerate(model.layers):
-    if hasattr(model.layers[ix], 'kernel_initializer') and \
-            hasattr(model.layers[ix], 'bias_initializer'):
-        weight_initializer = model.layers[ix].kernel_initializer
-        bias_initializer = model.layers[ix].bias_initializer
+        if hasattr(model.layers[ix], 'kernel_initializer') and \
+              hasattr(model.layers[ix], 'bias_initializer'):
+          weight_initializer = model.layers[ix].kernel_initializer
+          bias_initializer = model.layers[ix].bias_initializer
 
-        old_weights, old_biases = model.layers[ix].get_weights()
+          old_weights, old_biases = model.layers[ix].get_weights()
 
-        model.layers[ix].set_weights([
-            weight_initializer(shape=old_weights.shape),
-            bias_initializer(shape=old_biases.shape)])
+          model.layers[ix].set_weights([
+              weight_initializer(shape=old_weights.shape),
+              bias_initializer(shape=old_biases.shape)])
     return model
 
 # COMMAND ----------
@@ -318,26 +397,28 @@ model.weights
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC we learned how to build fully-connected networks out of stacks of dense layers. When first created, all of the network's weights are set randomly -- the network doesn't "know" anything yet. In this lesson we're going to see how to train a neural network; we're going to see how neural networks learn.
+# MAGIC **Summary so far**   
+# MAGIC We learned how to build fully-connected networks out of stacks of dense layers. When first created, all of the network's weights are set randomly – the network doesn't "know" anything yet. In the next section we're going to see how to train a neural network and how neural networks learn.
 # MAGIC 
-# MAGIC As with all machine learning tasks, we begin with a set of training data. Each example in the training data consists of some features (the inputs) together with an expected target (the output). Training the network means adjusting its weights in such a way that it can transform the features into the target. In the 80 Cereals dataset, for instance, we want a network that can take each cereal's 'sugar', 'fiber', and 'protein' content and produce a prediction for that cereal's 'calories'. If we can successfully train a network to do that, its weights must represent in some way the relationship between those features and that target as expressed in the training data.
+# MAGIC As with all machine learning tasks, we begin with a set of training data. Each example in the training data consists of some features (the inputs) together with an expected target (the output). Training the network means adjusting its weights in such a way that it can transform the features into the target. In the 80 Cereals dataset, for instance, we want a network that can take each cereal's `'sugar'`, `'fiber'`, and `'protein'` content and produce a prediction for that cereal's `'calories'`. If we can successfully train a network to do that, its weights must represent in some way the relationship between those features and that target as expressed in the training data.
 # MAGIC 
 # MAGIC In addition to the training data, we need two more things:
 # MAGIC 
-# MAGIC     A "loss function" that measures how good the network's predictions are.
-# MAGIC     An "optimizer" that can tell the network how to change its weights.
+# MAGIC - A "loss function" that measures how good the network's predictions are.
+# MAGIC - An "optimizer" that can tell the network how to change its weights.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 4.4 - The Loss Function
 # MAGIC 
-# MAGIC ### The Loss Function
-# MAGIC 
-# MAGIC We've seen how to design an architecture for a network, but we haven't seen how to tell a network what problem to solve. This is the job of the loss function.
-# MAGIC 
+# MAGIC We've seen how to design an architecture for a network, but we haven't seen how to **tell a network what problem to solve**. This is the job of the **loss function**.   
 # MAGIC The loss function measures the disparity between the the target's true value and the value the model predicts.
 # MAGIC 
-# MAGIC Different problems call for different loss functions. We have been looking at regression problems, where the task is to predict some numerical value -- calories in 80 Cereals, rating in Red Wine Quality. Other regression tasks might be predicting the price of a house or the fuel efficiency of a car.
+# MAGIC Different problems call for different loss functions. We have been looking at regression problems, where the task is to predict some numerical value – calories in *80 Cereals*, rating in *Red Wine Quality*. Other regression tasks might be predicting the price of a house or the fuel efficiency of a car.
 # MAGIC 
-# MAGIC A common loss function for regression problems is the mean absolute error or MAE. For each prediction y_pred, MAE measures the disparity from the true target y_true by an absolute difference abs(y_true - y_pred).
-# MAGIC 
-# MAGIC The total MAE loss on a dataset is the mean of all these absolute differences.
+# MAGIC A common loss function for regression problems is the **mean absolute error** or **MAE**. For each prediction, MAE measures the disparity from the true target by an absolute difference abs(target - prediction).   
+# MAGIC The total MAE loss on a dataset is the mean of all these absolute differences. Hence, it is the average length between the fitted curve and the data points. 
 
 # COMMAND ----------
 
@@ -346,16 +427,19 @@ Image("./images/VDcvkZN.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The mean absolute error is the average length between the fitted curve and the data points.
 # MAGIC 
-# MAGIC Besides MAE, other loss functions you might see for regression problems are the mean-squared error (MSE) or the Huber loss (both available in Keras).
+# MAGIC Besides MAE, other loss functions you might see for regression problems are the **mean-squared error** (**MSE**) or the **Huber loss** (both available in Keras).
 # MAGIC 
 # MAGIC During training, the model will use the loss function as a guide for finding the correct values of its weights (lower loss is better). In other words, the loss function tells the network its objective.
-# MAGIC The Optimizer - Stochastic Gradient Descent
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC ### 4.5 - The Optimizer - Stochastic Gradient Descent
 # MAGIC 
-# MAGIC We've described the problem we want the network to solve, but now we need to say how to solve it. This is the job of the optimizer. The optimizer is an algorithm that adjusts the weights to minimize the loss.
+# MAGIC We've described the problem we want the network to solve, but now we need to say how to solve it. This is the job of the **optimizer**. The optimizer is an algorithm that **adjusts the weights to minimize the loss**.
 # MAGIC 
-# MAGIC Virtually all of the optimization algorithms used in deep learning belong to a family called stochastic gradient descent. They are iterative algorithms that train a network in steps. One step of training goes like this:
+# MAGIC Virtually all of the optimization algorithms used in deep learning belong to a family called **stochastic gradient descent**. They are iterative algorithms that train a network in steps. One step of training goes like this:
 # MAGIC 
 # MAGIC + Sample some training data and run it through the network to make predictions.
 # MAGIC + Measure the loss between the predictions and the true values.
@@ -368,7 +452,7 @@ Image("./images/VDcvkZN.png")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Training a neural network with Stochastic Gradient Descent.
+# MAGIC ## 5 - Training a neural network
 # MAGIC 
 # MAGIC Each iteration's sample of training data is called a minibatch (or often just "batch"), while a complete round of the training data is called an epoch. The number of epochs you train for is how many times the network will see each training example.
 # MAGIC 
@@ -380,8 +464,11 @@ Image("./images/VDcvkZN.png")
 # MAGIC The learning rate and the size of the minibatches are the two parameters that have the largest effect on how the SGD training proceeds. Their interaction is often subtle and the right choice for these parameters isn't always obvious. (We'll explore these effects in the exercise.)
 # MAGIC 
 # MAGIC Fortunately, for most work it won't be necessary to do an extensive hyperparameter search to get satisfactory results. Adam is an SGD algorithm that has an adaptive learning rate that makes it suitable for most problems without any parameter tuning (it is "self tuning", in a sense). Adam is a great general-purpose optimizer.
-# MAGIC 
-# MAGIC ### Adding the Loss and Optimizer
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 5.1 - Adding the Loss and Optimizer
 # MAGIC 
 # MAGIC After defining a model, you can add a loss function and optimizer with the model's compile method:
 
@@ -501,7 +588,7 @@ history_df[['loss', 'val_loss']].plot();
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Interpreting the Learning Curves
+# MAGIC ### 5.2 - Interpreting the Learning Curves
 # MAGIC 
 # MAGIC You might think about the information in the training data as being of two kinds: signal and noise. The signal is the part that generalizes, the part that can help our model make predictions from new data. The noise is that part that is only true of the training data; the noise is all of the random fluctuation that comes from data in the real-world or all of the incidental, non-informative patterns that can't actually help the model make predictions. The noise is the part might look useful but really isn't.
 # MAGIC 
@@ -530,8 +617,11 @@ Image("./images/eUF6mfo.png")
 # MAGIC This trade-off indicates that there can be two problems that occur when training a model: not enough signal or too much noise. Underfitting the training set is when the loss is not as low as it could be because the model hasn't learned enough signal. Overfitting the training set is when the loss is not as low as it could be because the model learned too much noise. The trick to training deep learning models is finding the best balance between the two.
 # MAGIC 
 # MAGIC We'll look at a couple ways of getting as more signal out of the training data while reducing the amount of noise.
-# MAGIC 
-# MAGIC ### Capacity
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC ### 5.3 - Capacity
 # MAGIC 
 # MAGIC A model's capacity refers to the size and complexity of the patterns it is able to learn. For neural networks, this will largely be determined by how many neurons it has and how they are connected together. If it appears that your network is underfitting the data, you should try increasing its capacity.
 # MAGIC 
@@ -555,7 +645,7 @@ deeper = keras.Sequential([layers.Dense(16, activation='relu'),
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Early Stopping
+# MAGIC ### 5.4 - Early Stopping
 # MAGIC 
 # MAGIC We mentioned that when a model is too eagerly learning noise, the validation loss may start to increase during training. To prevent this, we can simply stop the training whenever it seems the validation loss isn't decreasing anymore. Interrupting the training this way is called early stopping.
 
@@ -590,8 +680,11 @@ early_stopping = EarlyStopping(min_delta=0.001, # minimium amount of change to c
 # MAGIC These parameters say: "If there hasn't been at least an improvement of 0.01 in the validation loss over the previous 5 epochs, then stop the training and keep the best model you found." It can sometimes be hard to tell if the validation loss is rising due to overfitting or just due to noise. The parameters allow us to set some allowances around when to stop.
 # MAGIC 
 # MAGIC As we'll see in our example, we'll pass this callback to the fit method along with the loss and optimizer.
-# MAGIC 
-# MAGIC ### Example - Train a Model with Early Stopping
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 5.4.1 - Example: Train a Model with Early Stopping
 # MAGIC 
 # MAGIC Let's continue developing the model from the example in the last tutorial. We'll increase the capacity of that network but also add an early-stopping callback to prevent overfitting.
 # MAGIC 
@@ -633,21 +726,11 @@ print("Minimum validation loss: {}".format(history_df['val_loss'].min()))
 # MAGIC Dropout
 # MAGIC 
 # MAGIC The first of these is the "dropout layer", which can help correct overfitting.
-# MAGIC 
-# MAGIC In the last lesson we talked about how overfitting is caused by the network learning spurious patterns in the training data. To recognize these spurious patterns a network will often rely on very a specific combinations of weight, a kind of "conspiracy" of weights. Being so specific, they tend to be fragile: remove one and the conspiracy falls apart.
-# MAGIC 
-# MAGIC This is the idea behind dropout. To break up these conspiracies, we randomly drop out some fraction of a layer's input units every step of training, making it much harder for the network to learn those spurious patterns in the training data. Instead, it has to search for broad, general patterns, whose weight patterns tend to be more robust.
-# MAGIC 
-# MAGIC ![](https://miro.medium.com/max/1048/0*sTulvHwJk7XzmVuW.gif)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Here, 50% dropout has been added between the two hidden layers.
-# MAGIC 
-# MAGIC You could also think about dropout as creating a kind of ensemble of networks. The predictions will no longer be made by one big network, but instead by a committee of smaller networks. Individuals in the committee tend to make different kinds of mistakes, but be right at the same time, making the committee as a whole better than any individual. (If you're familiar with random forests as an ensemble of decision trees, it's the same idea.)
-# MAGIC 
-# MAGIC ### Adding Dropout
+# MAGIC ### 5.5 - Adding Dropout
 # MAGIC 
 # MAGIC In Keras, the dropout rate argument rate defines what percentage of the input units to shut off. Put the Dropout layer just before the layer you want the dropout applied to:
 
@@ -664,7 +747,23 @@ print("Minimum validation loss: {}".format(history_df['val_loss'].min()))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Batch Normalization
+# MAGIC In the last lesson we talked about how overfitting is caused by the network learning spurious patterns in the training data. To recognize these spurious patterns a network will often rely on very a specific combinations of weight, a kind of "conspiracy" of weights. Being so specific, they tend to be fragile: remove one and the conspiracy falls apart.
+# MAGIC 
+# MAGIC This is the idea behind dropout. To break up these conspiracies, we randomly drop out some fraction of a layer's input units every step of training, making it much harder for the network to learn those spurious patterns in the training data. Instead, it has to search for broad, general patterns, whose weight patterns tend to be more robust.
+# MAGIC 
+# MAGIC ![](https://miro.medium.com/max/1048/0*sTulvHwJk7XzmVuW.gif)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Here, 50% dropout has been added between the two hidden layers.
+# MAGIC 
+# MAGIC You could also think about dropout as creating a kind of ensemble of networks. The predictions will no longer be made by one big network, but instead by a committee of smaller networks. Individuals in the committee tend to make different kinds of mistakes, but be right at the same time, making the committee as a whole better than any individual. (If you're familiar with random forests as an ensemble of decision trees, it's the same idea.)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 5.6 - Batch Normalization
 # MAGIC 
 # MAGIC The next special layer we'll look at performs "batch normalization" (or "batchnorm"), which can help correct training that is slow or unstable.
 # MAGIC 
@@ -673,8 +772,11 @@ print("Minimum validation loss: {}".format(history_df['val_loss'].min()))
 # MAGIC Now, if it's good to normalize the data before it goes into the network, maybe also normalizing inside the network would be better! In fact, we have a special kind of layer that can do this, the batch normalization layer. A batch normalization layer looks at each batch as it comes in, first normalizing the batch with its own mean and standard deviation, and then also putting the data on a new scale with two trainable rescaling parameters. Batchnorm, in effect, performs a kind of coordinated rescaling of its inputs.
 # MAGIC 
 # MAGIC Most often, batchnorm is added as an aid to the optimization process (though it can sometimes also help prediction performance). Models with batchnorm tend to need fewer epochs to complete training. Moreover, batchnorm can also fix various problems that can cause the training to get "stuck". Consider adding batch normalization to your models, especially if you're having trouble during training.
-# MAGIC 
-# MAGIC ### Adding Batch Normalization
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 5.6.1 - Adding Batch Normalization
 # MAGIC 
 # MAGIC It seems that batch normalization can be used at almost any point in a network. You can put it after a layer...
 
@@ -698,8 +800,11 @@ layers.Activation('relu'),
 
 # MAGIC %md
 # MAGIC And if you add it as the first layer of your network it can act as a kind of adaptive preprocessor, standing in for something like Sci-Kit Learn's StandardScaler.
-# MAGIC 
-# MAGIC ### Example - Using Dropout and Batch Normalization
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC #### 5.6.2 - Example: Using Dropout and Batch Normalization
 # MAGIC 
 # MAGIC Let's continue developing the Red Wine model. Now we'll increase the capacity even more, but add dropout to control overfitting and batch normalization to speed up optimization. This time, we'll also leave off standardizing the data, to demonstrate how batch normalization can stabilize the training.
 
@@ -744,15 +849,26 @@ history_df.loc[:, ['loss', 'val_loss']].plot(figsize=(8,8));
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## 6 - Using NNs for Binary Classification
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC So far, we've learned about how neural networks can solve regression problems. Now we're going to apply neural networks to another common machine learning problem: classification. Most everything we've learned up until now still applies. The main difference is in the loss function we use and in what kind of outputs we want the final layer to produce.
-# MAGIC 
-# MAGIC ### Binary Classification
+
+# COMMAND ----------
+
+# MAGIC %md 
 # MAGIC 
 # MAGIC Classification into one of two classes is a common machine learning problem. You might want to predict whether or not a customer is likely to make a purchase, whether or not a credit card transaction was fraudulent, whether deep space signals show evidence of a new planet, or a medical test evidence of a disease. These are all binary classification problems.
 # MAGIC 
 # MAGIC In your raw data, the classes might be represented by strings like "Yes" and "No", or "Dog" and "Cat". Before using this data we'll assign a class label: one class will be 0 and the other will be 1. Assigning numeric labels puts the data in a form a neural network can use.
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC 
-# MAGIC ### Accuracy and Cross-Entropy
+# MAGIC ### 6.1 - Accuracy and Cross-Entropy
 # MAGIC 
 # MAGIC Accuracy is one of the many metrics in use for measuring success on a classification problem. Accuracy is the ratio of correct predictions to total predictions: accuracy = number_correct / total. A model that always predicted correctly would have an accuracy score of 1.0. All else being equal, accuracy is a reasonable metric to use whenever the classes in the dataset occur with about the same frequency.
 # MAGIC 
@@ -772,8 +888,11 @@ Image("./images/DwVV9bR.png")
 # MAGIC The idea is that we want our network to predict the correct class with probability 1.0. The further away the predicted probability is from 1.0, the greater will be the cross-entropy loss.
 # MAGIC 
 # MAGIC The technical reasons we use cross-entropy are a bit subtle, but the main thing to take away from this section is just this: use cross-entropy for a classification loss; other metrics you might care about (like accuracy) will tend to improve along with it.
-# MAGIC 
-# MAGIC ### Making Probabilities with the Sigmoid Function
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 6.2 - Making Probabilities with the Sigmoid Function
 # MAGIC 
 # MAGIC The cross-entropy and accuracy functions both require probabilities as inputs, meaning, numbers from 0 to 1. To covert the real-valued outputs produced by a dense layer into probabilities, we attach a new kind of activation function, the sigmoid activation.
 

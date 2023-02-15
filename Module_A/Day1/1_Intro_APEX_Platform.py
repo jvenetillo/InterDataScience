@@ -24,6 +24,7 @@
 
 # MAGIC %md
 # MAGIC ### 1. Execute code in multiple languages
+# MAGIC Every notebook has a *default language*. In this case, it is Python.   
 # MAGIC To run the default language of the notebook, no additional commands are needed. 
 
 # COMMAND ----------
@@ -33,7 +34,7 @@ print("Run default language")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC To run a different language, it needs to be specified by language magic commands: `%python`, `%scala`, `%sql`, `%r`
+# MAGIC To run a **different language**, the language needs to be specified by *language magic commands*: `%python`, `%scala`, `%sql`, `%r`
 
 # COMMAND ----------
 
@@ -58,7 +59,7 @@ print("Run default language")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC You can also run shell commands on the driver using the magic command: `%sh`
+# MAGIC You can also run **shell commands** on the driver using the magic command `%sh`.
 
 # COMMAND ----------
 
@@ -67,7 +68,7 @@ print("Run default language")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Alternatively you can use the exclamation sign `!` to execute shell commands.
+# MAGIC Alternatively, you can use the exclamation sign `!` to execute shell commands.
 
 # COMMAND ----------
 
@@ -77,7 +78,7 @@ print("Run default language")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC You can render HTML using the function: `displayHTML` (available in Python, Scala, and R)
+# MAGIC You can render HTML using the function `displayHTML` (available in Python, Scala, and R).
 
 # COMMAND ----------
 
@@ -88,7 +89,7 @@ displayHTML(html)
 
 # MAGIC %md
 # MAGIC ## 2. Create documentation cells
-# MAGIC To render a cell as <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank">Markdown</a> use the magic command: `%md`  
+# MAGIC To render a cell as <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank">Markdown</a>, use the magic command `%md`.  
 # MAGIC 
 # MAGIC Below are some examples of how you can use Markdown to format documentation. Click this cell and press `Enter` to view the underlying Markdown syntax.
 # MAGIC 
@@ -189,6 +190,7 @@ display(files)
 
 # MAGIC %md
 # MAGIC #### Inspecting S3 shares using [AWSCLI](https://aws.amazon.com/cli/)
+# MAGIC S3 shares are the primary method of dealing with data on the APEX platform.
 
 # COMMAND ----------
 

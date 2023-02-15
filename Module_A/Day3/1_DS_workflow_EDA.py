@@ -3,47 +3,45 @@
 # MAGIC # Data Science workflow  
 # MAGIC 
 # MAGIC In this sequence of notebooks, we will exemplify the inner steps of the Data Science workflow.  
-# MAGIC We are not going to discuss the business requirements and deployment strategies, just the phases below:
+# MAGIC We are not going to discuss the business requirements and deployment strategies. The focus is on the four phases below:
 # MAGIC 
-# MAGIC ### I - Exploratory Data Analysis (this notebook)  
-# MAGIC ##### II - Feature Engineering and Selection 
-# MAGIC ##### III - Modeling  
-# MAGIC ##### IV - Evaluation  
+# MAGIC ##### I - Exploratory Data Analysis (this notebook)  
+# MAGIC ###### II - Feature Engineering and Selection 
+# MAGIC ###### III - Modeling  
+# MAGIC ###### IV - Evaluation  
 # MAGIC 
-# MAGIC This notebook will cover the Exploratory Data Analysis (EDA).
+# MAGIC This notebook will cover the **Exploratory Data Analysis** (EDA).
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## I - Exploratory Data Analysis  
+# MAGIC ## What is EDA?  
 # MAGIC 
-# MAGIC Exploratory Data Analysis is a set of techniques that were developed by John Wilder Tukey in 1970. The philosophy behind this approach was to examine the data before building a model.  
-# MAGIC John Tukey encouraged statisticians to explore the data, and possibly formulate hypotheses that could lead to new data collection and experiments.  
+# MAGIC **E**xploratory **D**ata **A**nalysis (EDA) is a set of techniques that were developed in 1970. The philosophy was to examine the data before building a model to encouraged statisticians to explore the data, and possibly formulate hypotheses that could lead to new data collection and experiments.  
+# MAGIC Today, data scientists and analysts spend most of their time data wrangling and performing exploratory data analysis. But what exactly is EDA and why is it so important? 
 # MAGIC 
-# MAGIC Today Data scientists and analysts spend most of their time in Data Wrangling and Exploratory Data Analysis also known as EDA. But what is this EDA and why it is so important? 
-# MAGIC Exploratory Data Analysis (EDA) is a step in the Data Science Workflow, where a number of techniques are used to better understand the dataset being used.
+# MAGIC Exploratory data analysis is a step in the Data Science Workflow, where a number of techniques are used to better understand the dataset being used.
+# MAGIC 'Understanding the dataset' can refer to a number of things including but not limited to:
 # MAGIC 
-# MAGIC ‘Understanding the dataset’ can refer to a number of things including but not limited to…
-# MAGIC 
-# MAGIC + Get maximum insights from a data set
-# MAGIC + Uncover underlying structure
+# MAGIC + Getting maximum insights from a data set
+# MAGIC + Discovering underlying structure
 # MAGIC + Extracting important variables and leaving behind useless variables
 # MAGIC + Identifying outliers, anomalies, missing values, or human error
 # MAGIC + Understanding the relationship(s), or lack of, between variables
-# MAGIC + Test underlying assumptions
-# MAGIC + Ultimately, maximizing your insights of a dataset and minimizing potential error that may occur later in the process
+# MAGIC + Testing underlying assumptions
+# MAGIC + Ultimately, maximizing your insights of a dataset and minimizing potential errors that may occur later in the process
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Let's see how exploratory data analysis is regarded in CRISP-DM and CRISP-ML:
+# MAGIC **Let's see how exploratory data analysis is regarded in CRISP-DM and CRISP-ML:**
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## CRISP-DM
 # MAGIC 
-# MAGIC The CRoss Industry Standard Process for Data Mining ([CRISP-DM](https://www.datascience-pm.com/crisp-dm-2/)) is a process model that serves as the base for a data science process. 
+# MAGIC The **CR**oss **I**ndustry **S**tandard **P**rocess for **D**ata **M**ining ([CRISP-DM](https://www.datascience-pm.com/crisp-dm-2/)) is a process model that serves as the basis for the data science process.   
 # MAGIC 
 # MAGIC It has six sequential phases:
 # MAGIC 
@@ -58,7 +56,7 @@
 # MAGIC [CRISP-DM Process](https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png)
 # MAGIC 
 # MAGIC <br>
-# MAGIC <img src="https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png" width="768" height="512" />
+# MAGIC <img src="https://miro.medium.com/max/736/1*0-mnwXXLlMB_bEQwp-706Q.png" width="400"  />
 
 # COMMAND ----------
 
@@ -66,7 +64,7 @@
 # MAGIC The machine learning community is still trying to establish a standard process model for machine learning development. As a result, many machine learning and data science projects are still not well organized. Results are not reproducible.  
 # MAGIC In general, such projects are conducted in an ad-hoc manner. To guide ML practitioners through the development life cycle, the Cross-Industry Standard Process for the development of Machine Learning applications with Quality assurance methodology ([CRISP-ML(Q)](https://ml-ops.org/content/crisp-ml)) was recently proposed.  
 # MAGIC 
-# MAGIC There is a particular order of the individual stages. Still, machine learning workflows are fundamentally iterative and exploratory, so that depending on the results from the later phases, we might re-examine earlier steps.
+# MAGIC There is a particular order of the individual stages. Still, machine learning workflows are fundamentally iterative and exploratory, so that depending on the results from the later phases we might re-examine earlier steps.
 
 # COMMAND ----------
 
@@ -88,12 +86,13 @@
 # MAGIC [Source](https://www.researchgate.net/publication/329930775_A_comprehensive_review_of_tools_for_exploratory_analysis_of_tabular_industrial_datasets)
 # MAGIC 
 # MAGIC <br>
-# MAGIC <img src="https://www.researchgate.net/publication/329930775/figure/fig3/AS:873046667710469@1585161954284/The-fundamental-steps-of-the-exploratory-data-analysis-process_W640.jpg" width="1024" height="512" />
+# MAGIC <img src="https://www.researchgate.net/publication/329930775/figure/fig3/AS:873046667710469@1585161954284/The-fundamental-steps-of-the-exploratory-data-analysis-process_W640.jpg" width="600"  />
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Starting the EDA
+# MAGIC ## I - Exploratory Data Analysis
+# MAGIC ***Starting the EDA***
 
 # COMMAND ----------
 
@@ -129,7 +128,6 @@ df.head()
 
 # COMMAND ----------
 
-#df.columns
 df.info(verbose=True, show_counts=True)
 
 # COMMAND ----------
@@ -144,7 +142,7 @@ df.describe()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### At this moment, you look for columns that shall be transformed/converted later in the workflow.
+# MAGIC **We look for columns that will be transformed/converted later in the workflow.**
 
 # COMMAND ----------
 
@@ -164,7 +162,7 @@ df.isnull().sum()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC It seems there are not missing values, but that may be misleading. Let's explore a bit more:
+# MAGIC It seems there are not missing values, but that might be misleading. Let's explore a bit more:
 
 # COMMAND ----------
 
@@ -175,7 +173,7 @@ for col in df.columns:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC There are null values in our dataset in the form of ‘?’ but Pandas is not recognizing them. We will replace them with `np.nan`.
+# MAGIC There are null values in our dataset in the form of `'?'` but Pandas is not recognizing them. We will replace them with `np.nan`.
 
 # COMMAND ----------
 
@@ -192,7 +190,7 @@ df.isnull().sum()
 
 # MAGIC %md
 # MAGIC #### 3.1 Visualizing the missing values  
-# MAGIC Now the missing values are identified in the dataframe. With the help of heatmap, we can see the amount of data that is missing from the attribute. With this, we can make decisions whether to drop these missing values or to replace them. Usually dropping the missing values is not advisable but sometimes it may be helpful too.
+# MAGIC Now the missing values are identified in the dataframe. With the help of a heatmap we can see the amount of data that is missing from the attributes. With this, we can make decisions whether to drop these missing values or to replace them. Usually, dropping the missing values is not advisable but sometimes it can be helpful, too.
 
 # COMMAND ----------
 
@@ -202,12 +200,13 @@ sns.heatmap(df.isnull(),cbar=False,cmap='viridis')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Now observe that there are many missing values in 'normalized_losses' while other columns have fewer missing values. We can’t drop the 'normalized_losses' column as it may be important for our prediction.  
+# MAGIC Observe that there are many missing values in ``'normalized_losses'`` while other columns have fewer missing values. We can’t simply drop the ``'normalized_losses'`` column as it may be important for our prediction.  
 # MAGIC We can also use the **missingno** libray for a better evaluation of the missing values. First we can check the quantity and how they distribute among the rows:
 
 # COMMAND ----------
 
-#!pip install missingno
+# missingno comes preinstalled with ML runtimes but not with Standard runtimes. 
+# !pip install missingno
 
 # COMMAND ----------
 
@@ -244,7 +243,7 @@ msno.dendrogram(df)
 # MAGIC %md
 # MAGIC #### 3.2. Replacing the missing values
 # MAGIC We will be replacing these missing values with the mean because the number of missing values is not great (we could have used the median too).  
-# MAGIC Later, in the data preparation phase, we will learn other imputation techniques.
+# MAGIC Later, when we are in the data preparation phase, we will learn other imputation techniques.
 
 # COMMAND ----------
 
@@ -257,7 +256,7 @@ df.select_dtypes(include='object').head()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Now let's transform the mistaken datatypes for numeric values and fill with the mean, using the strategy we have chosen.
+# MAGIC Now let's transform the mistaken datatypes for numeric values and fill with the mean, the strategy we have chosen.
 
 # COMMAND ----------
 
@@ -272,12 +271,12 @@ df.head()
 # MAGIC %md
 # MAGIC ### 4. Checking Data Distributions
 # MAGIC 
-# MAGIC This is the most important step in EDA. 
+# MAGIC This is the **most important step** in EDA. 
 # MAGIC - This step will decide how much insight you can get.
 # MAGIC - Checking the distributions is fundamental for feature selection and the modeling phase.
 # MAGIC - This step varies from person to person in terms of their questioning ability. 
 # MAGIC 
-# MAGIC Let's check the univariate and bivariate distributions and correlation between different variables, this will give us a roadmap on how to proceed further.
+# MAGIC Let's check the univariate and bivariate distributions and correlation between different variables. This will give us a roadmap on how to proceed further.
 
 # COMMAND ----------
 
@@ -321,8 +320,9 @@ for col in numeric_cols:
 sns.set_style("darkgrid")
 
 #plot the distribution of the DataFrame "Price" column
-plt.figure(figsize=(8,12))
-#sns.histplot(df['price'])
+plt.figure(figsize=(8,6))
+sns.histplot(df['price'])
+
 sns.displot(df['peak-rpm'], kde=True, bins=50, height=8, aspect=2)  
 
 # COMMAND ----------
@@ -396,13 +396,13 @@ sns.heatmap(df.corr(), cbar=True, annot=True, cmap='Blues')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### Positive Correlation  
+# MAGIC **Positive Correlation**  
 # MAGIC + Price – wheel_base, length, width, curb_weight, engine_size, bore, horsepower  
 # MAGIC + wheelbase – length, width, height, curb_weight, engine_size, price  
 # MAGIC + horsepower – length, width, curb_weight, engine_size, bore, price  
 # MAGIC + Highway mpg – city mpg  
 # MAGIC 
-# MAGIC ##### Negative Correlation  
+# MAGIC **Negative Correlation**  
 # MAGIC + Price – highway_mpg, city_mpg  
 # MAGIC + highway_mpg – wheel base, length, width, curb_weight, engine_size, bore, horsepower, price  
 # MAGIC + city – wheel base, length, width, curb_weight, engine_size, bore, horsepower, price  
@@ -429,7 +429,6 @@ sns.boxplot(x="fuel-type", y="horsepower", data=df, ax=ax)
 
 # COMMAND ----------
 
-#sns.catplot(x="fuel-type", y="horsepower", hue="num-of-doors", kind="box", data=df, height=8, aspect=2)
 sns.catplot(x="fuel-type", y="horsepower", hue="num-of-doors", kind="violin", inner="stick", split=True, palette="pastel", data=df, height=8, aspect=2)
 
 # COMMAND ----------
@@ -443,10 +442,10 @@ sns.catplot(x="fuel-type", y="horsepower", hue="num-of-doors", kind="violin", in
 # MAGIC Try to ask questions related to independent variables and the target variable.  
 # MAGIC Example questions related to this dataset could be:  
 # MAGIC 
-# MAGIC + How fuel_type will affect the price of the car?   
-# MAGIC + How does the horsepower affect the price?  
-# MAGIC + What is the relation between engine_size and price?  
-# MAGIC + How does highway_mpg affects price?  
+# MAGIC + How ``'fuel_type'`` will affect the price of the car?   
+# MAGIC + How does ``'horsepower'`` affect the price?  
+# MAGIC + What is the relation between ``'engine_size'`` and price?  
+# MAGIC + How does ``'highway_mpg'`` affects price?  
 # MAGIC + What is the relation between no. of doors and price?
 
 # COMMAND ----------
@@ -477,7 +476,7 @@ plt.ylabel('Price')
 # COMMAND ----------
 
 plt.figure(figsize=(12,10))
-#https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html  
+# https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html  
 plt.scatter(x='horsepower',y='price', data=df)
 plt.xlabel('Horsepower')
 plt.ylabel('Price')
@@ -492,19 +491,19 @@ sns.jointplot(x='horsepower',y='price', data=df, kind='hex')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We can see that most of the horsepower values are lying between 50-150 and have a price mostly between 5000-25000. There are also outliers (between 200-300).  
-# MAGIC Let’s see a count between 50-100 i.e univariate analysis of horsepower.
+# MAGIC We can see that most of the horsepower values are lying between 50 and 150 and have a price mostly between 5000 and 25000. There are also some outliers (between 200 and 300).  
+# MAGIC Let’s see a count between 50 and 100 i.e univariate analysis of horsepower.
 
 # COMMAND ----------
 
 plt.figure(figsize=(12,10))
-#https://seaborn.pydata.org/generated/seaborn.histplot.html
-sns.histplot(df.horsepower,bins=10)
+# https://seaborn.pydata.org/generated/seaborn.histplot.html
+sns.histplot(df.horsepower, bins=10)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The average count between 50-100 is 50 and it is positively skewed.
+# MAGIC The average count between 50 and 100 is 50 and it is positively skewed.
 
 # COMMAND ----------
 
@@ -545,7 +544,7 @@ plt.ylabel('Price')
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We can see price decreases with an increase in 'higway-mpg'.
+# MAGIC We can see price decreases with an increase in ``'higway-mpg'``.
 
 # COMMAND ----------
 
@@ -569,17 +568,17 @@ sns.boxplot(x='price', y='num-of-doors',data=df)
 
 # MAGIC %md
 # MAGIC With this boxplot, we can conclude that the average price of a vehicle with two doors is 10000,  and the average price of a vehicle with four doors is close to 12000.  
-# MAGIC With this plot, we have gained enough insights from data and our data is ready to build a model.
+# MAGIC With this plot, we have gained enough insights from data. We are ready to build a model.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ##### There are ways to explore relationships between more than two variables; although it can get a bit more complicated to interpret.
+# MAGIC **There are ways to explore relationships between more than two variables; although it can get a bit more complicated to interpret.**
 
 # COMMAND ----------
 
 #Create a pivot table for car manufactures and fuel with horsepower rate as values
-grouped = pd.pivot_table(data=df,index='make',columns='fuel-type',values='horsepower',aggfunc='mean')
+grouped = pd.pivot_table(data=df, index='make', columns='fuel-type', values='horsepower', aggfunc='mean')
 
 #Create a heatmap to visualize manufactures, fuel type and horse power
 plt.figure(figsize=[12,10])

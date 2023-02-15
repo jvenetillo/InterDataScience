@@ -12,14 +12,14 @@
 # MAGIC #### We love Pandas!  
 # MAGIC 
 # MAGIC Learning programming with Pandas is like getting started with the “Hello World” program in the world of data science.  
-# MAGIC Pandas is a widely used, intuitive, easy to learn Python library. It deals with Dataframes which store data in tabular format with rows and columns (spreadsheet format). Pandas loads all the data into the memory of the machine (Single Node) for faster execution.  
+# MAGIC Pandas is a widely used, intuitive, easy to learn Python library. It deals with dataframes which store data in tabular format with rows and columns (spreadsheet format). Pandas loads all the data into the memory of the machine (Single Node) for faster execution.  
 # MAGIC 
 # MAGIC <br>
 # MAGIC <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Grosser_Panda.JPG/1280px-Grosser_Panda.JPG" width="512" height="384" />
 # MAGIC 
 # MAGIC #### Why Pyspark then?
 # MAGIC 
-# MAGIC While Pandas stays one of the widely used libraries in dealing with tabular format data especially in Data Science, it does not fully support **parallelization**.  
+# MAGIC While Pandas stays one of the widely used libraries in dealing with tabular data, especially in Data Science, it does not fully support **parallelization**.  
 # MAGIC Pyspark is a Python API for Spark. It has been released to support the collaboration between Python and Spark environments.
 # MAGIC 
 # MAGIC Pyspark with its *cluster computing* processes the data in a distributed manner by running the code on multiple nodes, leading to decreased execution times. With data being created exponentially every day, Data Scientists now have huge datasets to deal with, which is where distributed computing comes in. But what is Spark?
@@ -30,24 +30,20 @@
 # MAGIC 
 # MAGIC A single computer usually has the memory and computational power to perform calculations on data sets up to the size of a few gigabytes or less. Data sets larger than that either can't fit into the memory of a single computer or take an unacceptably long time for a single computer to process. For these types of "big data" use cases, we need a system that can split a large data set into smaller subsets &mdash; often referred to as **partitions** &mdash; and then distribute the processing of these data partitions across a number of computers.
 # MAGIC 
-# MAGIC [Apache Spark](https://spark.apache.org/) is an open-source data processing engine that manages distributed processing of large data sets.
+# MAGIC [Apache Spark](https://spark.apache.org/) is an open-source data processing engine that manages distributed processing of large data sets. The creaters of Spark also founded Databricks. Databricks, in general, uses Apache Spark as the computation engine for the platform.
 # MAGIC 
-# MAGIC For example, let's say that we have a large data set and we want to calculate various statistics for some of its numeric columns. With Apache Spark, our program only needs to specify the data set to read and the statistics that we want calculated. We can then run the program on a set of computers that have been configured to serve as an Apache Spark **cluster**. When we run it, Spark automatically:
+# MAGIC Let's say that we have a large data set and we want to calculate various statistics for some of its numeric columns. With Apache Spark, our program only needs to specify the data set to read and the statistics that we want calculated. We can then run the program on a set of computers that have been configured to serve as an Apache Spark **cluster**. When we run it, Spark automatically
 # MAGIC 
 # MAGIC * determines how to divide the data set into partitions,
 # MAGIC * assigns those partitions to the various computers of the cluster with instructions for calculating per-partition statistics, and
 # MAGIC * finally collects those per-partitions statistics and calculates the final results we requested.
-# MAGIC 
-# MAGIC Spark was created originally as a research project at the University of California Berkeley. In 2013, the project was donated to the Apache Software Foundation. That same year the creators of Spark founded Databricks.
-# MAGIC 
-# MAGIC Databricks, in general, uses Apache Spark as the computation engine for the platform. Databricks provides simple management tools for running Spark clusters composed of cloud-provided virtual machines to process the data you have in cloud object storage and other systems.
 
 # COMMAND ----------
 
 # MAGIC %md-sandbox
 # MAGIC <img src="https://files.training.databricks.com/images/sparkcluster.png" style="width:600px;height:250px;">
 # MAGIC 
-# MAGIC So, if you want to move from a single node to multiple nodes and adapt to distributed cluster computing, this notebook will help in converting Pandas code to Pyspark code.  
+# MAGIC If you want to move from a single node to multiple nodes and adapt to distributed cluster computing, this notebook will help in converting Pandas code to Pyspark code.  
 # MAGIC It presents some of the commonly used Pandas Dataframe transformations and some miscellaneous operations along with the corresponding Pyspark syntax.
 
 # COMMAND ----------
@@ -79,7 +75,8 @@ from pyspark.sql import functions as F
 # MAGIC ![](https://miro.medium.com/max/1280/1*aJSwrFLDlDbf9axjJ7gXHw.jpeg)
 # MAGIC 
 # MAGIC The SparkSession class is the single entry point to all functionality in Spark using the DataFrame API.  
-# MAGIC It provides a way to interact with various spark’s functionality in order to programmatically create PySpark RDD, DataFrame with a lesser number of constructs. Instead of having a spark context, hive context, SQL context, now all of it is encapsulated in a Spark session.
+# MAGIC It provides a way to interact with various spark’s functionality in order to programmatically create the PySpark RDD (Resilient Distributed Dataset).   
+# MAGIC Instead of having a spark context, hive context, SQL context, now all of it is encapsulated in a Spark session.
 # MAGIC More information [here](https://sparkbyexamples.com/pyspark/pyspark-what-is-sparksession/).
 
 # COMMAND ----------
@@ -147,15 +144,21 @@ df2.display()
 
 # MAGIC %md
 # MAGIC Next, we compare how we create new columns. 
-# MAGIC If you are coming from Pandas, the Pyspark syntax might be less intuitive at first. 
+# MAGIC If you are coming from Pandas, the Pyspark syntax might be less intuitive at first.   
 # MAGIC 
-# MAGIC The key to almost all column manipulation in Pyspark is the `withColumn()` method. 
+# MAGIC In Pandas, you can create a new column by simply assigning a value to it. For example:
 
 # COMMAND ----------
 
 # PANDAS - New column with constant values
 df1['C'] = 'New Constant'
 df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC In Spark, the `withColumn()` method works differently. It takes two arguments: the name of the new column and a Column object that defines the values to be placed in the new column. The Column object is created using functions from the `pyspark.sql.functions` module. For example:
 
 # COMMAND ----------
 
@@ -189,12 +192,18 @@ df2.show()
 
 # MAGIC %md
 # MAGIC #### 3 - Updating Existing Column Data
+# MAGIC In Pandas, you can update the values in a column by simply assigning new values to it using the indexing operator. 
 
 # COMMAND ----------
 
 # PANDAS - Update Column data
 df1['Value'] = df1['Value']**2
 df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In Spark, you can update the values in a column using the withColumn method and a function from the pyspark.sql.functions module.
 
 # COMMAND ----------
 
@@ -209,9 +218,19 @@ df2.show()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC In Pandas, you can select a single column or multiple columns from a dataframe by using the indexing operator and passing a list of column names.
+
+# COMMAND ----------
+
 # PANDAS - Selecting Columns
 new_df1 = df1[['B', 'C']]
 new_df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC In Spark, you can select a single column or multiple columns from a dataframe by using the `select` method and passing either the column names or a list of column names.
 
 # COMMAND ----------
 
@@ -221,13 +240,20 @@ new_df2.show()
 
 # COMMAND ----------
 
-df1
+# MAGIC %md
+# MAGIC In both Pandas and Spark, you can filter rows from a dataframe based on conditions.   
+# MAGIC In Pandas, you can use the indexing operator and boolean masks to filter rows. 
 
 # COMMAND ----------
 
 # PANDAS - Filtering rows based on condition
 new_df1 = df1[df1['Value']<5]
 new_df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In Spark, you can use the `filter` method to filter rows based on a condition by passing the condition as a Column object.
 
 # COMMAND ----------
 
@@ -242,9 +268,20 @@ new_df2.show()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC In both Pandas and Spark, you can convert a column from string to datetime/timestamp format.  
+# MAGIC In Pandas, you can use the `to_datetime` function to convert a column from string to datetime format by passing the column name as an argument. For example:
+
+# COMMAND ----------
+
 # PANDAS - Convert Column from String to DateTime format
 df1['Date_Column'] =  pd.to_datetime(df1['Date_Column'], format='%d-%m-%Y %H:%M')
 df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In Spark, you can use the to_timestamp function from the pyspark.sql.functions module to convert a column from string to timestamp format. 
 
 # COMMAND ----------
 
@@ -256,6 +293,10 @@ df2.show()
 
 # MAGIC %md
 # MAGIC #### 6 - Rename, Drop Columns
+# MAGIC 
+# MAGIC In both Pandas and Spark, you can rename and drop columns in a dataframe. However, there are some differences in the way this is done between the two libraries.
+# MAGIC 
+# MAGIC In Pandas, you can rename columns using the `rename` method and passing a dictionary that maps the old column names to the new column names.
 
 # COMMAND ----------
 
@@ -265,15 +306,30 @@ df1.head()
 
 # COMMAND ----------
 
+# MAGIC %md 
+# MAGIC In Spark, you can rename columns using the `withColumnRenamed` method and passing the old and new column names. 
+
+# COMMAND ----------
+
 # PYSPARK - Rename Columns
 df2 = df2.withColumnRenamed("A", "Col_A").withColumnRenamed("B", "Col_B")
 df2.show()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC You can also drop columns in Pandas using the `drop` method and passing a list of column names to be dropped.
+
+# COMMAND ----------
+
 # PANDAS - Drop Columns
 df1 = df1.drop(['Col_A', 'Col_B'], axis=1)
 df1.head()
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC In Spark you drop columns by using the `drop` method and passing a list of column names to be dropped. 
 
 # COMMAND ----------
 
@@ -285,6 +341,14 @@ df2.show()
 
 # MAGIC %md
 # MAGIC #### 7 - Melt Dataframes
+# MAGIC Melting a dataframe refers to the process of transforming a dataframe from a wide format to a long format. In a wide format dataframe, each row represents a single observation, and each column represents a variable. In a long format dataframe, each row represents a single observation and a single variable.  
+# MAGIC 
+# MAGIC To melt a dataframe, you need to specify the columns that contain the variables to be melted and the columns that contain the values for those variables. The result will be a new dataframe where the specified columns are "unpivoted" into two new columns: one for the variable names and one for the values.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In Pandas, you can use the `melt` function to melt a dataframe. The melt function takes a number of arguments, including the `id_vars` and `value_vars` arguments, which specify the columns that should be kept as identifiers and the columns that should be melted, respectively. 
 
 # COMMAND ----------
 
@@ -294,6 +358,11 @@ df3 = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
                     'C': {0: 2, 1: 4, 2: 6}})
 
 pd.melt(df3, id_vars=['A'], value_vars=['B', 'C'])
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC In Spark, there is no built-in function for melting dataframes. However, you can use the `withColumn` method and functions to achieve the same result.
 
 # COMMAND ----------
 
@@ -315,6 +384,17 @@ melt(df4, ['A'], ['B', 'C']).display()
 
 # MAGIC %md
 # MAGIC #### 8 - Add Interval to a Timestamp Column (Timedelta)
+# MAGIC 
+# MAGIC A timedelta is a duration that represents a difference between two dates or times. 
+# MAGIC 
+# MAGIC You might want to add a timedelta to a timestamp column in a DataFrame for several reasons. For example, you might want to shift all the timestamps forward by a certain duration to correct for an error in the original data, or to change the time zone of the timestamps. Another reason to add a timedelta is to create a new column with modified timestamps, such as events that are scheduled to occur at a later time than the events in the original column. Additionally, you might want to group the data by week, month, or year and compute summary statistics for each group by adding a timedelta to the timestamp column and shifting all the timestamps so that they fall within the same week, month, or year.
+
+# COMMAND ----------
+
+# MAGIC %md 
+# MAGIC In both Pandas and Spark, you can add a timedelta or time interval to a timestamp column by using the `+` operator. 
+# MAGIC 
+# MAGIC In Pandas, a timedelta is represented by a `Timedelta` object, which can be created using the `timedelta` function. Alternatively, you can use the `to_timedelta` function to convert a column of data to a `Timedelta` type.
 
 # COMMAND ----------
 
@@ -327,6 +407,11 @@ df5 = pd.DataFrame([['2021-01-10 10:10:00', '00:05'],
 df5['Start_Time'] = pd.to_datetime(df5['Start_Time'])
 df5['End_Time'] = df5['Start_Time'] + pd.to_timedelta(pd.to_datetime(df5['Interval']).dt.strftime('%H:%M:%S'))
 df5.head()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In PySpark, a timedelta is represented by a usual column in timestamp format. Hence, you can use the `to_timestamp` function to convert a column of data to a timestamp type as previously seen.
 
 # COMMAND ----------
 

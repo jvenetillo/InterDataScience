@@ -11,7 +11,7 @@
 # MAGIC %md
 # MAGIC 
 # MAGIC You will now create databases in your workspace.  
-# MAGIC To name it correctly, **substitute "renato" by your name in the `username` variable.
+# MAGIC To name it correctly, **substitute "renato" by your name in the `username` variable**.
 
 # COMMAND ----------
 
